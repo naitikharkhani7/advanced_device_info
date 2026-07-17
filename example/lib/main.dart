@@ -312,60 +312,149 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  void _showStorageDialog(StorageInfo storage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Row(
+          children: [
+            Icon(Icons.storage, color: Colors.orangeAccent),
+            SizedBox(width: 8),
+            Text('Storage Details'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDialogRow('Total Storage', _formatBytes(storage.totalStorage)),
+            const Divider(color: Colors.white12),
+            _buildDialogRow('Used Storage', _formatBytes(storage.usedStorage)),
+            const Divider(color: Colors.white12),
+            _buildDialogRow('Free Storage', _formatBytes(storage.freeStorage)),
+            const Divider(color: Colors.white12),
+            _buildDialogRow('Usage Percentage', '${storage.usagePercentage.toStringAsFixed(2)}%'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close', style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMemoryDialog(MemoryInfo memory) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Row(
+          children: [
+            Icon(Icons.developer_board, color: Colors.tealAccent),
+            SizedBox(width: 8),
+            Text('Memory Details'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDialogRow('Total RAM', _formatBytes(memory.totalRam)),
+            const Divider(color: Colors.white12),
+            _buildDialogRow('Used RAM', _formatBytes(memory.usedRam)),
+            const Divider(color: Colors.white12),
+            _buildDialogRow('Available RAM', _formatBytes(memory.availableRam)),
+            const Divider(color: Colors.white12),
+            _buildDialogRow('Usage Percentage', '${memory.usagePercentage.toStringAsFixed(2)}%'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close', style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDialogRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.white70, fontSize: 14)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStorageCard() {
     final storage = _systemInfo!.storageInfo;
     final usagePercent = storage.usagePercentage / 100.0;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.storage, color: Colors.orangeAccent),
-                SizedBox(width: 8),
-                Text(
-                  'STORAGE USAGE',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _showStorageDialog(storage),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.storage, color: Colors.orangeAccent),
+                  SizedBox(width: 8),
+                  Text(
+                    'STORAGE USAGE',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${storage.usagePercentage.toStringAsFixed(1)}% Used',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '${_formatBytes(storage.usedStorage)} / ${_formatBytes(storage.totalStorage)}',
-                  style: const TextStyle(fontSize: 13, color: Colors.white70),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: usagePercent.clamp(0.0, 1.0),
-                minHeight: 12,
-                backgroundColor: const Color(0xFF334155),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Available storage space: ${_formatBytes(storage.freeStorage)}',
-              style: const TextStyle(fontSize: 12, color: Colors.white60),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${storage.usagePercentage.toStringAsFixed(1)}% Used',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '${_formatBytes(storage.usedStorage)} / ${_formatBytes(storage.totalStorage)}',
+                    style: const TextStyle(fontSize: 13, color: Colors.white70),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: usagePercent.clamp(0.0, 1.0),
+                  minHeight: 12,
+                  backgroundColor: const Color(0xFF334155),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Available storage space: ${_formatBytes(storage.freeStorage)}',
+                style: const TextStyle(fontSize: 12, color: Colors.white60),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -376,59 +465,64 @@ class _DashboardPageState extends State<DashboardPage> {
     final usagePercent = memory.usagePercentage / 100.0;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.developer_board, color: Colors.tealAccent),
-                SizedBox(width: 8),
-                Text(
-                  'SYSTEM RAM',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _showMemoryDialog(memory),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.developer_board, color: Colors.tealAccent),
+                  SizedBox(width: 8),
+                  Text(
+                    'SYSTEM RAM',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${memory.usagePercentage.toStringAsFixed(1)}% Used',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '${_formatBytes(memory.usedRam)} / ${_formatBytes(memory.totalRam)}',
-                  style: const TextStyle(fontSize: 13, color: Colors.white70),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: usagePercent.clamp(0.0, 1.0),
-                minHeight: 12,
-                backgroundColor: const Color(0xFF334155),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.tealAccent),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Available system memory: ${_formatBytes(memory.availableRam)}',
-              style: const TextStyle(fontSize: 12, color: Colors.white60),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${memory.usagePercentage.toStringAsFixed(1)}% Used',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '${_formatBytes(memory.usedRam)} / ${_formatBytes(memory.totalRam)}',
+                    style: const TextStyle(fontSize: 13, color: Colors.white70),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: usagePercent.clamp(0.0, 1.0),
+                  minHeight: 12,
+                  backgroundColor: const Color(0xFF334155),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.tealAccent),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Available system memory: ${_formatBytes(memory.availableRam)}',
+                style: const TextStyle(fontSize: 12, color: Colors.white60),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
 
   Widget _buildBuildInfoCard() {
     final dev = _systemInfo!.deviceInfo;
