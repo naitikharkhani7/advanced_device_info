@@ -1,0 +1,83 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+.mypy_cache/
+
+# IntelliJ / Android Studio
+*.iml
+.idea/
+*.ipr
+*.iws
+
+# VS Code
+.vscode/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+.pub-cache/
+build/
+
+# Generated files
+coverage/
+doc/api/
+
+# Android
+**/android/**/gradle-wrapper.jar
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.*
+
+# iOS
+**/ios/.symlinks/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Pods/
+**/ios/Runner.xcworkspace/
+**/ios/DerivedData/
+
+# CocoaPods
+Podfile.lock
+
+# macOS
+**/macos/Pods/
+**/macos/Flutter/ephemeral/
+
+# Linux
+**/linux/flutter/ephemeral/
+
+# Windows
+**/windows/flutter/ephemeral/
+
+# Web
+.flutter-plugins
+
+# Firebase
+firebase-debug.log
+
+# Environment
+.env
+.env.*
+
+# Keys
+*.jks
+*.keystore
+key.properties
+
+# Test reports
+test/report/
