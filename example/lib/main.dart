@@ -1,9 +1,9 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:advanced_device_info/advanced_device_info.dart';
 
 void main() => runApp(const MyApp());
 
+/// Root application widget configuring dark theme and app shell.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -13,10 +13,13 @@ class MyApp extends StatelessWidget {
       title: 'Advanced Device Info',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true).copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
-        colorScheme: const ColorScheme.dark(primary: Color(0xFF6366F1), surface: Color(0xFF1E293B)),
+        scaffoldBackgroundColor: const Color(0xFF0B132B),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF6366F1),
+          surface: Color(0xFF1C2541),
+        ),
         cardTheme: CardThemeData(
-          color: const Color(0xFF1E293B),
+          color: const Color(0xFF1C2541),
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
@@ -27,7 +30,7 @@ class MyApp extends StatelessWidget {
 }
 
 /// Dashboard demonstrating senior-level asynchronous data fetching,
-/// reusable UI components, and clean separation of concerns.
+/// reusable UI components, and complete hardware & security inspection.
 class DeviceInfoDashboard extends StatefulWidget {
   const DeviceInfoDashboard({super.key});
 
@@ -54,7 +57,10 @@ class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DEVICE METRICS', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 18)),
+        title: const Text(
+          'DEVICE METRICS & SECURITY',
+          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 16),
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         actions: [
@@ -69,11 +75,16 @@ class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
         future: _deviceInfoFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+            );
           }
 
           if (snapshot.hasError) {
-            return _ErrorView(errorMessage: snapshot.error.toString(), onRetry: _fetchData);
+            return _ErrorView(
+              errorMessage: snapshot.error.toString(),
+              onRetry: _fetchData,
+            );
           }
 
           if (!snapshot.hasData) {
@@ -89,15 +100,21 @@ class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
               children: [
                 _HeaderBanner(device: info.deviceInfo),
                 const SizedBox(height: 14),
+                _SecurityOverviewCard(security: info.securityInfo),
+                const SizedBox(height: 14),
+                _BatteryOverviewCard(battery: info.batteryInfo),
+                const SizedBox(height: 14),
+                _NetworkOverviewCard(network: info.networkInfo),
+                const SizedBox(height: 14),
                 _SpecsGrid(cpu: info.cpuInfo, screen: info.screenInfo),
                 const SizedBox(height: 14),
                 _ResourceUsageCard(
                   title: 'STORAGE USAGE',
                   icon: Icons.storage_rounded,
                   accentColor: Colors.orangeAccent,
-                  usedBytes: info.storageInfo.usedStorage,
-                  totalBytes: info.storageInfo.totalStorage,
-                  freeBytes: info.storageInfo.freeStorage,
+                  usedDisplay: info.storageInfo.formattedUsedStorage,
+                  totalDisplay: info.storageInfo.formattedTotalStorage,
+                  freeDisplay: info.storageInfo.formattedFreeStorage,
                   usagePercent: info.storageInfo.usagePercentage,
                 ),
                 const SizedBox(height: 14),
@@ -105,12 +122,15 @@ class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
                   title: 'SYSTEM RAM',
                   icon: Icons.memory_rounded,
                   accentColor: Colors.tealAccent,
-                  usedBytes: info.memoryInfo.usedRam,
-                  totalBytes: info.memoryInfo.totalRam,
-                  freeBytes: info.memoryInfo.availableRam,
+                  usedDisplay: info.memoryInfo.formattedUsedRam,
+                  totalDisplay: info.memoryInfo.formattedTotalRam,
+                  freeDisplay: info.memoryInfo.formattedAvailableRam,
                   usagePercent: info.memoryInfo.usagePercentage,
                 ),
-                if (info.deviceInfo.buildInfo.isNotEmpty) ...[const SizedBox(height: 14), _BuildInfoCard(buildInfo: info.deviceInfo.buildInfo)],
+                if (info.deviceInfo.buildInfo.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  _BuildInfoCard(buildInfo: info.deviceInfo.buildInfo),
+                ],
               ],
             ),
           );
@@ -120,6 +140,11 @@ class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
   }
 }
 
+// =============================================================================
+// REUSABLE PRESENTATIONAL WIDGETS
+// =============================================================================
+
+/// Top gradient banner presenting core device branding and emulator status.
 class _HeaderBanner extends StatelessWidget {
   final DeviceInfo device;
 
@@ -130,9 +155,19 @@ class _HeaderBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFFEC4899)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withAlpha(80), blurRadius: 14, offset: const Offset(0, 6))],
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6366F1).withAlpha(80),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +185,10 @@ class _HeaderBanner extends StatelessWidget {
               if (device.isEmulator)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: const Text(
                     'EMULATOR',
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.amberAccent),
@@ -172,6 +210,281 @@ class _HeaderBanner extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Security card showing Root, Jailbreak, Developer Mode, ADB, and USB Cable status.
+class _SecurityOverviewCard extends StatelessWidget {
+  final SecurityInfo security;
+
+  const _SecurityOverviewCard({required this.security});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.security_rounded, color: Colors.redAccent, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'SECURITY & INTEGRITY',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: security.isCompromised ? Colors.red.withAlpha(50) : Colors.green.withAlpha(50),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: security.isCompromised ? Colors.redAccent : Colors.greenAccent,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    security.isCompromised ? 'COMPROMISED' : 'SECURE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: security.isCompromised ? Colors.redAccent : Colors.greenAccent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _SecurityBadgeRow(
+              label: 'Developer Options',
+              value: security.isDeveloperMode ? 'ENABLED' : 'DISABLED',
+              isWarning: security.isDeveloperMode,
+              icon: Icons.developer_mode_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SecurityBadgeRow(
+              label: 'USB Debugging (ADB)',
+              value: security.isAdbEnabled ? 'ACTIVE' : 'DISABLED',
+              isWarning: security.isAdbEnabled,
+              icon: Icons.bug_report_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SecurityBadgeRow(
+              label: 'USB Cable Connection',
+              value: security.isUsbConnected ? 'CONNECTED' : 'DISCONNECTED',
+              isWarning: security.isUsbConnected,
+              icon: Icons.usb_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SecurityBadgeRow(
+              label: 'Root / Jailbreak',
+              value: (security.isRooted || security.isJailbroken) ? 'DETECTED' : 'NOT DETECTED',
+              isWarning: security.isRooted || security.isJailbroken,
+              icon: Icons.lock_open_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SecurityBadgeRow(
+              label: 'Lock Screen / Passcode',
+              value: security.isDeviceSecure ? 'CONFIGURED' : 'NOT SET',
+              isWarning: !security.isDeviceSecure,
+              icon: Icons.lock_outline_rounded,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SecurityBadgeRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isWarning;
+  final IconData icon;
+
+  const _SecurityBadgeRow({
+    required this.label,
+    required this.value,
+    required this.isWarning,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.white54),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Colors.white70),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: isWarning ? Colors.amberAccent : Colors.tealAccent,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Battery Card showing level, power source, charging state, temperature, and power-saver mode.
+class _BatteryOverviewCard extends StatelessWidget {
+  final BatteryInfo battery;
+
+  const _BatteryOverviewCard({required this.battery});
+
+  @override
+  Widget build(BuildContext context) {
+    final level = battery.batteryLevel;
+    final levelPercent = (level >= 0 ? level / 100.0 : 0.0).clamp(0.0, 1.0);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      battery.isCharging ? Icons.battery_charging_full_rounded : Icons.battery_std_rounded,
+                      color: Colors.greenAccent,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'BATTERY & POWER',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                    ),
+                  ],
+                ),
+                if (battery.isLowPowerMode)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withAlpha(40),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'BATTERY SAVER ON',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.amberAccent),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  level >= 0 ? '$level% Charge' : 'Unavailable',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '${battery.batteryStatus.toUpperCase()} • ${battery.powerSource.toUpperCase()}',
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: levelPercent,
+                minHeight: 10,
+                backgroundColor: const Color(0xFF334155),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  level > 20 ? Colors.greenAccent : Colors.redAccent,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Health: ${battery.batteryHealth.toUpperCase()}',
+                  style: const TextStyle(fontSize: 11, color: Colors.white60),
+                ),
+                if (battery.batteryTemperature > 0)
+                  Text(
+                    'Temp: ${battery.batteryTemperature.toStringAsFixed(1)}°C',
+                    style: const TextStyle(fontSize: 11, color: Colors.white60),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Network Card displaying internet state, connection type, and active VPN warning.
+class _NetworkOverviewCard extends StatelessWidget {
+  final NetworkInfo network;
+
+  const _NetworkOverviewCard({required this.network});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  network.isConnected ? Icons.wifi_rounded : Icons.wifi_off_rounded,
+                  color: network.isConnected ? const Color(0xFF38BDF8) : Colors.redAccent,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      network.isConnected ? 'ONLINE (${network.connectionType.toUpperCase()})' : 'OFFLINE',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      network.isVpnActive ? 'VPN Active (Tunnel detected)' : 'No VPN Active',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: network.isVpnActive ? Colors.amberAccent : Colors.white60,
+                        fontWeight: network.isVpnActive ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            if (network.isVpnActive)
+              const Icon(Icons.vpn_key_rounded, color: Colors.amberAccent, size: 20),
+          ],
+        ),
       ),
     );
   }
@@ -220,7 +533,13 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
 
-  const _StatCard({required this.title, required this.value, required this.subtitle, required this.icon, required this.iconColor});
+  const _StatCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -241,10 +560,7 @@ class _StatCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
+            Text(value, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 4),
             Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.white60)),
           ],
@@ -255,23 +571,22 @@ class _StatCard extends StatelessWidget {
 }
 
 /// Generic, highly reusable resource card handling both Storage and RAM metrics.
-/// Eliminates code duplication for progress bars, percentage badges, and byte calculations.
 class _ResourceUsageCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final Color accentColor;
-  final int usedBytes;
-  final int totalBytes;
-  final int freeBytes;
+  final String usedDisplay;
+  final String totalDisplay;
+  final String freeDisplay;
   final double usagePercent;
 
   const _ResourceUsageCard({
     required this.title,
     required this.icon,
     required this.accentColor,
-    required this.usedBytes,
-    required this.totalBytes,
-    required this.freeBytes,
+    required this.usedDisplay,
+    required this.totalDisplay,
+    required this.freeDisplay,
     required this.usagePercent,
   });
 
@@ -289,15 +604,24 @@ class _ResourceUsageCard extends StatelessWidget {
               children: [
                 Icon(icon, color: accentColor, size: 20),
                 const SizedBox(width: 8),
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                ),
               ],
             ),
             const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${usagePercent.toStringAsFixed(1)}% Used', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                Text('${usedBytes.toReadableBytes()} / ${totalBytes.toReadableBytes()}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                Text(
+                  '${usagePercent.toStringAsFixed(1)}% Used',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '$usedDisplay / $totalDisplay',
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -311,7 +635,10 @@ class _ResourceUsageCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text('Available: ${freeBytes.toReadableBytes()}', style: const TextStyle(fontSize: 11, color: Colors.white60)),
+            Text(
+              'Available: $freeDisplay',
+              style: const TextStyle(fontSize: 11, color: Colors.white60),
+            ),
           ],
         ),
       ),
@@ -333,7 +660,10 @@ class _BuildInfoCard extends StatelessWidget {
         child: ExpansionTile(
           initiallyExpanded: false,
           leading: const Icon(Icons.settings_suggest_rounded, color: Colors.purpleAccent, size: 20),
-          title: const Text('DETAILED BUILD INFO', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+          title: const Text(
+            'DETAILED BUILD INFO',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+          ),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             const Divider(color: Colors.white12),
@@ -352,7 +682,10 @@ class _BuildInfoCard extends StatelessWidget {
                     ),
                     Expanded(
                       flex: 3,
-                      child: Text(entry.value?.toString() ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                      child: Text(
+                        entry.value?.toString() ?? 'N/A',
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
                     ),
                   ],
                 ),
@@ -388,20 +721,14 @@ class _ErrorView extends StatelessWidget {
               style: const TextStyle(color: Colors.redAccent, fontSize: 14),
             ),
             const SizedBox(height: 20),
-            ElevatedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('Try Again')),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Try Again'),
+            ),
           ],
         ),
       ),
     );
-  }
-}
-
-/// Clean extension on [int] to eliminate repeated formatBytes boilerplate.
-extension ByteFormatting on int {
-  String toReadableBytes({int decimals = 1}) {
-    if (this <= 0) return '0 B';
-    const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    final i = (log(this) / log(1024)).floor().clamp(0, suffixes.length - 1);
-    return '${(this / pow(1024, i)).toStringAsFixed(decimals)} ${suffixes[i]}';
   }
 }

@@ -3,6 +3,12 @@ description: "A Flutter plugin for comprehensive Android and iOS device informat
 version: 0.0.1
 homepage: https://github.com/naitikharkhani7/advanced_device_info
 repository: https://github.com/naitikharkhani7/advanced_device_info
+topics:
+  - device-info
+  - hardware
+  - security
+  - battery
+  - system-info
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

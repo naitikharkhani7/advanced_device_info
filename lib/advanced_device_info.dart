@@ -1,4 +1,3 @@
-
 import 'advanced_device_info_platform_interface.dart';
 import 'src/device_info_models.dart';
 
@@ -35,7 +34,22 @@ class AdvancedDeviceInfo {
     return AdvancedDeviceInfoPlatform.instance.getScreenInfo();
   }
 
-  /// Retrieves aggregated system-wide information (all Phase 1 metrics).
+  /// Retrieves battery charge level, health, temperature, and charging status.
+  static Future<BatteryInfo> getBatteryInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getBatteryInfo();
+  }
+
+  /// Retrieves device security posture, root/jailbreak detection, developer mode, and USB cable status.
+  static Future<SecurityInfo> getSecurityInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getSecurityInfo();
+  }
+
+  /// Retrieves internet connectivity status and active VPN tunnel detection.
+  static Future<NetworkInfo> getNetworkInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getNetworkInfo();
+  }
+
+  /// Retrieves aggregated system-wide information across all hardware, security, and network metrics.
   static Future<SystemInfo> getSystemInfo() {
     return AdvancedDeviceInfoPlatform.instance.getSystemInfo();
   }

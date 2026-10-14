@@ -6,77 +6,86 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Pub Points](https://img.shields.io/pub/points/advanced_device_info)](https://pub.dev/packages/advanced_device_info/score)
 
-A production-ready Flutter plugin for retrieving comprehensive system-level device and hardware information on Android and iOS using native platform APIs.
+A production-ready Flutter plugin for retrieving comprehensive system-level device, hardware, battery, network, and security/anti-fraud inspection metrics on Android and iOS using native platform APIs.
 
 ---
 
 # ✨ Features
 
-## 📱 Device Information
+## 🛡️ Security & Integrity (Fintech / Anti-Fraud)
+- **Root Detection** (Android `su` binary, test-keys, Magisk detection)
+- **Jailbreak Detection** (iOS Cydia, substrate, sandbox integrity escape)
+- **Developer Options Detection** (Check if Developer Mode is enabled in settings)
+- **USB Debugging / ADB Detection** (Check if ADB is active)
+- **USB Cable Connection Status** (Detect if phone is plugged into a USB cable/computer)
+- **Screen Lock Security** (Check if PIN, Pattern, Password, or Biometrics are set)
+- **Native Debugger Detection** (Check if a debugger is actively attached)
+- **`isCompromised` Convenience Flag**
 
+---
+
+## 🔋 Battery & Power Information
+- **Battery Level** (0% to 100%)
+- **Charging State** (`charging`, `discharging`, `full`, `notCharging`)
+- **Power Source** (`ac`, `usb`, `wireless`, `none`)
+- **Battery Health** (`good`, `overheat`, `dead`, `over_voltage`, etc.)
+- **Battery Temperature** in °Celsius
+- **Low Power Mode / Battery Saver** status
+
+---
+
+## 📶 Network & Connectivity
+- **Active Internet State** (Connected / Offline)
+- **Connection Type** (`wifi`, `cellular`, `ethernet`, `vpn`, `none`)
+- **VPN Detection** (Detect active VPN tunnels and proxy configurations)
+
+---
+
+## 📱 Device Information
 - Device Name
 - Manufacturer
 - Brand
 - Model
-- Product
-- Hardware
-- Board
-- Fingerprint
-- Build ID
-- Build Type
-- Build Tags
-- Build Host
-- SDK Version
-- Android Version
-- Emulator Detection
+- Build ID, Display, Fingerprint, Hardware
+- SDK Version & OS Release
+- Emulator / Simulator Detection
 
 ---
 
 ## 💾 Storage Information
-
-- Total Storage
-- Used Storage
-- Free Storage
-- Storage Usage Percentage
+- Total, Used, and Free Storage in Bytes
+- Usage Percentage
+- **Convenience Getters**: `totalStorageGB`, `usedStorageGB`, `freeStorageGB`, `formattedUsedStorage`, etc.
+- `isLowStorage(thresholdPercent: 90)`
 
 ---
 
-## 🧠 Memory Information
-
-- Total RAM
-- Used RAM
-- Available RAM
+## 🧠 Memory (RAM) Information
+- Total, Used, and Available RAM in Bytes
 - Memory Usage Percentage
+- **Convenience Getters**: `totalRamGB`, `usedRamGB`, `availableRamGB`, `formattedTotalRam`, etc.
+- `isLowMemory(thresholdPercent: 85)`
 
 ---
 
-## ⚡ CPU Information
-
-- CPU Architecture
-- CPU ABI
-- Number of CPU Cores
-
----
-
-## 🖥 Screen Information
-
-- Width
-- Height
-- Pixel Density
-- Refresh Rate
+## ⚡ CPU & 🖥 Screen Information
+- Architecture (`arm64`, `x86_64`, etc.) and CPU Core Count
+- Physical Width & Height in Pixels
+- Screen Scale / Density Scale
+- Refresh Rate in Hz (e.g. 60Hz, 90Hz, 120Hz)
 
 ---
 
 # 📦 Installation
 
-Add this package to your **pubspec.yaml**
+Add this package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
   advanced_device_info: ^0.0.1
 ```
 
-Install packages
+Install packages:
 
 ```bash
 flutter pub get
@@ -90,8 +99,8 @@ flutter pub get
 |----------|---------|
 | Android | ✅ |
 | iOS | ✅ |
-| Windows | 🚧 Planned |
 | macOS | 🚧 Planned |
+| Windows | 🚧 Planned |
 | Linux | 🚧 Planned |
 | Web | ❌ |
 
@@ -99,85 +108,40 @@ flutter pub get
 
 # 🚀 Quick Start
 
-Import the package
-
 ```dart
 import 'package:advanced_device_info/advanced_device_info.dart';
-```
 
-Get all system information
+// Get all system, battery, security, and hardware metrics at once:
+final SystemInfo info = await AdvancedDeviceInfo.getSystemInfo();
 
-```dart
-final SystemInfo info =
-    await AdvancedDeviceInfo.getSystemInfo();
-```
-
----
-
-# 📖 Usage
-
-## Complete Device Information
-
-```dart
-try {
-
-  final SystemInfo systemInfo =
-      await AdvancedDeviceInfo.getSystemInfo();
-
-  print(systemInfo.deviceInfo.deviceName);
-
-  print(systemInfo.memoryInfo.totalRam);
-
-  print(systemInfo.storageInfo.totalStorage);
-
-  print(systemInfo.cpuInfo.cores);
-
-  print(systemInfo.screenInfo.width);
-
-} catch (e) {
-
-  print(e);
-
+// 1. Security & Anti-Fraud Checks (Great for Banking / Payment apps)
+if (info.securityInfo.isDeveloperMode) {
+  print("Developer Mode is ON!");
 }
-```
+if (info.securityInfo.isAdbEnabled) {
+  print("USB Debugging is Active!");
+}
+if (info.securityInfo.isUsbConnected) {
+  print("USB Cable is Connected!");
+}
+if (info.securityInfo.isCompromised) {
+  print("Device is Rooted, Jailbroken, or Debugger attached!");
+}
 
----
+// 2. Battery Information
+print("Battery Level: ${info.batteryInfo.batteryLevel}%");
+print("Charging: ${info.batteryInfo.isCharging}");
+print("Power Source: ${info.batteryInfo.powerSource}");
+print("Temp: ${info.batteryInfo.batteryTemperature}°C");
 
-## Individual APIs
+// 3. Network & VPN
+print("Online: ${info.networkInfo.isConnected}");
+print("Type: ${info.networkInfo.connectionType}");
+print("VPN Active: ${info.networkInfo.isVpnActive}");
 
-### Device Information
-
-```dart
-final DeviceInfo info =
-    await AdvancedDeviceInfo.getDeviceInfo();
-```
-
-### Storage
-
-```dart
-final StorageInfo storage =
-    await AdvancedDeviceInfo.getStorageInfo();
-```
-
-### Memory
-
-```dart
-final MemoryInfo memory =
-    await AdvancedDeviceInfo.getMemoryInfo();
-```
-
-### CPU
-
-```dart
-final CpuInfo cpu =
-    await AdvancedDeviceInfo.getCpuInfo();
-```
-
-### Screen
-
-```dart
-final ScreenInfo screen =
-    await AdvancedDeviceInfo.getScreenInfo();
+// 4. Storage & RAM Convenience Getters
+print("Used Storage: ${info.storageInfo.formattedUsedStorage}"); // e.g. "54.2 GB"
+print("Available RAM: ${info.memoryInfo.formattedAvailableRam}"); // e.g. "3.5 GB"
 ```
 
 ---
@@ -186,159 +150,75 @@ final ScreenInfo screen =
 
 | Method | Description |
 |---------|-------------|
-| getSystemInfo() | Returns all device information |
-| getDeviceInfo() | Returns device metadata |
-| getStorageInfo() | Returns storage information |
-| getMemoryInfo() | Returns RAM information |
-| getCpuInfo() | Returns CPU information |
-| getScreenInfo() | Returns display information |
+| `getSystemInfo()` | Returns aggregated system, hardware, battery, and security metrics |
+| `getSecurityInfo()` | Returns Root, Jailbreak, Developer Mode, ADB, USB cable, and Lock screen status |
+| `getBatteryInfo()` | Returns Battery level, charging state, power source, temperature, and battery saver mode |
+| `getNetworkInfo()` | Returns Connectivity state, network transport type, and active VPN detection |
+| `getDeviceInfo()` | Returns Device metadata, manufacturer, model, and emulator flag |
+| `getStorageInfo()` | Returns Storage capacity, used/free bytes, and GB/MB formatters |
+| `getMemoryInfo()` | Returns RAM capacity, used/free bytes, and GB/MB formatters |
+| `getCpuInfo()` | Returns CPU architecture and core count |
+| `getScreenInfo()` | Returns Display dimensions, scale factor, and refresh rate in Hz |
 
 ---
 
 # 📄 Example Output
 
 ```text
-Device Name : Pixel 9 Pro
+Device Name          : Pixel 9 Pro
+Manufacturer         : Google
+Model                : Pixel 9 Pro
+Brand                : google
+Is Emulator          : false
 
-Manufacturer : Google
+-- Security --
+Developer Mode       : false
+USB Debugging (ADB)  : false
+USB Cable Connected  : false
+Root / Jailbreak     : false
+Passcode Secured     : true
 
-Model : Pixel 9 Pro
+-- Battery --
+Battery Level        : 85%
+Charging             : false
+Power Source         : none
+Temperature          : 31.5°C
+Battery Saver        : false
 
-Brand : google
+-- Network --
+Connected            : true
+Type                 : wifi
+VPN Active           : false
 
-Android Version : 16
+-- Storage & Memory --
+Storage              : 128.0 GB (Used: 54.2 GB, Free: 73.8 GB)
+RAM                  : 8.0 GB (Used: 4.5 GB, Free: 3.5 GB)
 
-SDK : 36
-
-CPU : arm64-v8a
-
-CPU Cores : 8
-
-RAM : 12 GB
-
-Storage : 256 GB
-
-Storage Used : 118 GB
-
-Screen : 1344 x 2992
-
-Refresh Rate : 120 Hz
-
-Is Emulator : false
+-- CPU & Screen --
+CPU Cores            : 8 Cores (arm64)
+Display              : 1344 x 2992 @ 120 Hz
 ```
 
 ---
 
 # 📸 Screenshots
 
-### Dashboard
-
 <p align="center">
-<img src="screenshots/dashboard.png" width="300">
+  <img src="screenshots/dashboard.png" width="300" alt="Dashboard">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="screenshots/storage.png" width="300" alt="Storage Info">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="screenshots/memory.png" width="300" alt="Memory Info">
 </p>
-
-### Storage Information
-
-<p align="center">
-<img src="screenshots/storage.png" width="300">
-</p>
-
-### Memory Information
-
-<p align="center">
-<img src="screenshots/memory.png" width="300">
-</p>
-
-> Create a `screenshots/` folder in the repository and place the images there.
-
----
-
-# 🔐 Permissions
-
-## Android
-
-No dangerous permissions are required.
-
-The plugin only accesses publicly available system information.
-
-## iOS
-
-No additional permissions are required.
-
----
-
-# ⚠ Platform Limitations
-
-Some information depends on operating system restrictions.
-
-| Feature | Android | iOS |
-|----------|---------|-----|
-| Device Name | ✅ | ✅ |
-| Storage | ✅ | ✅ |
-| RAM | ✅ | ✅ |
-| CPU | ✅ | Limited |
-| Build Info | ✅ | Limited |
-| Emulator Detection | ✅ | ✅ |
-
----
-
-# 🛣 Roadmap
-
-## v0.1
-
-- ✅ Device Information
-- ✅ Storage Information
-- ✅ Memory Information
-- ✅ CPU Information
-- ✅ Screen Information
-
----
-
-## v0.2
-
-- Battery Information
-- Network Information
-- Locale Information
-- Application Information
-
----
-
-## v0.3
-
-- Sensors
-- Root Detection
-- Developer Options Detection
-- USB Debugging Detection
-- Thermal Information
-
----
-
-## v1.0
-
-- Stable Release
-- Performance Optimizations
-- Full Documentation
-- Complete Test Coverage
 
 ---
 
 # 🤝 Contributing
 
-Contributions are welcome.
-
-If you'd like to improve this package:
-
-1. Fork the repository
-2. Create a new branch
-3. Commit your changes
-4. Submit a Pull Request
-
-Please read `CONTRIBUTING.md` before contributing.
+Contributions, bug reports, and feature requests are welcome! Feel free to check the [issues page](https://github.com/naitikharkhani7/advanced_device_info/issues).
 
 ---
 
-# 📄 License
+# 📝 License
 
-This project is licensed under the MIT License.
-
-See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

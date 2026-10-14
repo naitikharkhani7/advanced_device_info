@@ -15,6 +15,6 @@ void main() {
     await tester.pumpWidget(const MyApp());
 
     // Verify AppBar title is rendered.
-    expect(find.text('DEVICE METRICS'), findsOneWidget);
+    expect(find.text('DEVICE METRICS & SECURITY'), findsOneWidget);
   });
 }

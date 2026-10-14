@@ -48,6 +48,18 @@ abstract class AdvancedDeviceInfoPlatform extends PlatformInterface {
     throw UnimplementedError('getScreenInfo() has not been implemented.');
   }
 
+  Future<BatteryInfo> getBatteryInfo() {
+    throw UnimplementedError('getBatteryInfo() has not been implemented.');
+  }
+
+  Future<SecurityInfo> getSecurityInfo() {
+    throw UnimplementedError('getSecurityInfo() has not been implemented.');
+  }
+
+  Future<NetworkInfo> getNetworkInfo() {
+    throw UnimplementedError('getNetworkInfo() has not been implemented.');
+  }
+
   Future<SystemInfo> getSystemInfo() {
     throw UnimplementedError('getSystemInfo() has not been implemented.');
   }

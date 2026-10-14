@@ -1,9 +1,17 @@
 package com.naitikharkhani.advanced_device_info
 
 import android.app.ActivityManager
+import android.app.KeyguardManager
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.BatteryManager
 import android.os.Build
+import android.os.Debug
 import android.os.Environment
+import android.os.PowerManager
 import android.os.StatFs
 import android.provider.Settings
 import android.view.WindowManager
@@ -12,6 +20,8 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.io.File
+import java.net.NetworkInterface
 
 /** AdvancedDeviceInfoPlugin */
 class AdvancedDeviceInfoPlugin :
@@ -50,6 +60,15 @@ class AdvancedDeviceInfoPlugin :
                 }
                 "getScreenInfo" -> {
                     result.success(getScreenInfoMap())
+                }
+                "getBatteryInfo" -> {
+                    result.success(getBatteryInfoMap())
+                }
+                "getSecurityInfo" -> {
+                    result.success(getSecurityInfoMap())
+                }
+                "getNetworkInfo" -> {
+                    result.success(getNetworkInfoMap())
                 }
                 "getSystemInfo" -> {
                     result.success(getSystemInfoMap())
@@ -209,13 +228,230 @@ class AdvancedDeviceInfoPlugin :
         )
     }
 
+    private fun getBatteryInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+        val batteryIntent = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        
+        val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val batteryLevel = if (level >= 0 && scale > 0) {
+            (level * 100) / scale
+        } else {
+            -1
+        }
+
+        val rawStatus = batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+        val isCharging = rawStatus == BatteryManager.BATTERY_STATUS_CHARGING ||
+                rawStatus == BatteryManager.BATTERY_STATUS_FULL
+
+        val batteryStatus = when (rawStatus) {
+            BatteryManager.BATTERY_STATUS_CHARGING -> "charging"
+            BatteryManager.BATTERY_STATUS_DISCHARGING -> "discharging"
+            BatteryManager.BATTERY_STATUS_FULL -> "full"
+            BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "notCharging"
+            else -> "unknown"
+        }
+
+        val plugged = batteryIntent?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) ?: -1
+        val powerSource = when (plugged) {
+            BatteryManager.BATTERY_PLUGGED_AC -> "ac"
+            BatteryManager.BATTERY_PLUGGED_USB -> "usb"
+            BatteryManager.BATTERY_PLUGGED_WIRELESS -> "wireless"
+            0 -> "none"
+            else -> "unknown"
+        }
+
+        val rawHealth = batteryIntent?.getIntExtra(BatteryManager.EXTRA_HEALTH, -1) ?: -1
+        val batteryHealth = when (rawHealth) {
+            BatteryManager.BATTERY_HEALTH_GOOD -> "good"
+            BatteryManager.BATTERY_HEALTH_OVERHEAT -> "overheat"
+            BatteryManager.BATTERY_HEALTH_DEAD -> "dead"
+            BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "over_voltage"
+            BatteryManager.BATTERY_HEALTH_COLD -> "cold"
+            BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> "unspecified_failure"
+            else -> "unknown"
+        }
+
+        val rawTemp = batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
+        val batteryTemperature = rawTemp / 10.0
+
+        val powerManager = ctx.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val isLowPowerMode = powerManager?.isPowerSaveMode ?: false
+
+        return mapOf(
+            "batteryLevel" to batteryLevel,
+            "isCharging" to isCharging,
+            "batteryStatus" to batteryStatus,
+            "powerSource" to powerSource,
+            "batteryHealth" to batteryHealth,
+            "batteryTemperature" to batteryTemperature,
+            "isLowPowerMode" to isLowPowerMode
+        )
+    }
+
+    private fun getSecurityInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+        val resolver = ctx.contentResolver
+
+        // Developer mode check
+        val isDeveloperMode = try {
+            Settings.Global.getInt(resolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0
+        } catch (e: Exception) {
+            false
+        }
+
+        // ADB / USB Debugging check
+        val isAdbEnabled = try {
+            Settings.Global.getInt(resolver, Settings.Global.ADB_ENABLED, 0) != 0
+        } catch (e: Exception) {
+            false
+        }
+
+        // USB cable connected check
+        val usbIntent = ctx.registerReceiver(null, IntentFilter("android.hardware.usb.action.USB_STATE"))
+        val usbConnectedState = usbIntent?.getBooleanExtra("connected", false) ?: false
+        val batteryIntent = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val plugged = batteryIntent?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) ?: -1
+        val isUsbPlugged = (plugged == BatteryManager.BATTERY_PLUGGED_USB)
+        val isUsbConnected = usbConnectedState || isUsbPlugged
+
+        // Device lock / passcode check
+        val km = ctx.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+        val isDeviceSecure = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            km?.isDeviceSecure ?: false
+        } else {
+            @Suppress("DEPRECATION")
+            km?.isKeyguardSecure ?: false
+        }
+
+        // Debugger attached
+        val isDebuggerAttached = Debug.isDebuggerConnected()
+
+        // Root Detection
+        val isRooted = checkRootMethod1() || checkRootMethod2() || checkRootMethod3()
+
+        return mapOf(
+            "isRooted" to isRooted,
+            "isJailbroken" to false,
+            "isDeveloperMode" to isDeveloperMode,
+            "isAdbEnabled" to isAdbEnabled,
+            "isUsbConnected" to isUsbConnected,
+            "isDeviceSecure" to isDeviceSecure,
+            "isDebuggerAttached" to isDebuggerAttached
+        )
+    }
+
+    private fun checkRootMethod1(): Boolean {
+        val buildTags = Build.TAGS
+        return buildTags != null && buildTags.contains("test-keys")
+    }
+
+    private fun checkRootMethod2(): Boolean {
+        val paths = arrayOf(
+            "/system/app/Superuser.apk",
+            "/sbin/su",
+            "/system/bin/su",
+            "/system/xbin/su",
+            "/data/local/xbin/su",
+            "/data/local/bin/su",
+            "/system/sd/xbin/su",
+            "/system/bin/failsafe/su",
+            "/data/local/su",
+            "/su/bin/su",
+            "/system/xbin/daemonsu"
+        )
+        for (path in paths) {
+            if (File(path).exists()) return true
+        }
+        return false
+    }
+
+    private fun checkRootMethod3(): Boolean {
+        var process: java.lang.Process? = null
+        return try {
+            process = Runtime.getRuntime().exec(arrayOf("/system/xbin/which", "su"))
+            val reader = process.inputStream.bufferedReader()
+            reader.readLine() != null
+        } catch (t: Throwable) {
+            false
+        } finally {
+            process?.destroy()
+        }
+    }
+
+    private fun getNetworkInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+        val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        
+        var isConnected = false
+        var connectionType = "none"
+        var isVpn = false
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val activeNetwork = cm?.activeNetwork
+            val caps = cm?.getNetworkCapabilities(activeNetwork)
+            if (caps != null) {
+                isConnected = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                isVpn = caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                connectionType = when {
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "vpn"
+                    else -> "unknown"
+                }
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            val netInfo = cm?.activeNetworkInfo
+            @Suppress("DEPRECATION")
+            if (netInfo != null && netInfo.isConnected) {
+                isConnected = true
+                @Suppress("DEPRECATION")
+                connectionType = when (netInfo.type) {
+                    ConnectivityManager.TYPE_WIFI -> "wifi"
+                    ConnectivityManager.TYPE_MOBILE -> "cellular"
+                    ConnectivityManager.TYPE_ETHERNET -> "ethernet"
+                    ConnectivityManager.TYPE_VPN -> "vpn"
+                    else -> "unknown"
+                }
+            }
+        }
+
+        // Secondary VPN check via active network interfaces (tun, ppp, tap)
+        if (!isVpn) {
+            try {
+                val interfaces = NetworkInterface.getNetworkInterfaces()
+                while (interfaces != null && interfaces.hasMoreElements()) {
+                    val networkInterface = interfaces.nextElement()
+                    val name = networkInterface.name.lowercase()
+                    if (networkInterface.isUp && (name.contains("tun") || name.contains("ppp") || name.contains("p2p") || name.contains("tap"))) {
+                        isVpn = true
+                        break
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore interface error
+            }
+        }
+
+        return mapOf(
+            "isConnected" to isConnected,
+            "connectionType" to connectionType,
+            "isVpnActive" to isVpn
+        )
+    }
+
     private fun getSystemInfoMap(): Map<String, Any?> {
         return mapOf(
             "deviceInfo" to getDeviceInfoMap(),
             "storageInfo" to getStorageInfoMap(),
             "memoryInfo" to getMemoryInfoMap(),
             "cpuInfo" to getCpuInfoMap(),
-            "screenInfo" to getScreenInfoMap()
+            "screenInfo" to getScreenInfoMap(),
+            "batteryInfo" to getBatteryInfoMap(),
+            "securityInfo" to getSecurityInfoMap(),
+            "networkInfo" to getNetworkInfoMap()
         )
     }
 }

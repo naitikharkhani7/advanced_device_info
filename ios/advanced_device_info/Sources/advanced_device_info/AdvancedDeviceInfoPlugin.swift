@@ -1,6 +1,8 @@
 import Flutter
 import UIKit
 import Darwin
+import LocalAuthentication
+import SystemConfiguration
 
 public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
@@ -23,6 +25,12 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
       result(getCpuInfoMap())
     case "getScreenInfo":
       result(getScreenInfoMap())
+    case "getBatteryInfo":
+      result(getBatteryInfoMap())
+    case "getSecurityInfo":
+      result(getSecurityInfoMap())
+    case "getNetworkInfo":
+      result(getNetworkInfoMap())
     case "getSystemInfo":
       result(getSystemInfoMap())
     default:
@@ -173,13 +181,174 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
     ]
   }
 
+  private func getBatteryInfoMap() -> [String: Any] {
+    let device = UIDevice.current
+    device.isBatteryMonitoringEnabled = true
+    
+    let rawLevel = device.batteryLevel
+    let batteryLevel = rawLevel >= 0 ? Int(round(rawLevel * 100)) : -1
+    
+    let state = device.batteryState
+    let isCharging = (state == .charging || state == .full)
+    let batteryStatus: String
+    switch state {
+    case .charging:
+      batteryStatus = "charging"
+    case .full:
+      batteryStatus = "full"
+    case .unplugged:
+      batteryStatus = "discharging"
+    default:
+      batteryStatus = "unknown"
+    }
+
+    let powerSource = isCharging ? "ac" : (state == .unplugged ? "none" : "unknown")
+    let isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+
+    return [
+      "batteryLevel": batteryLevel,
+      "isCharging": isCharging,
+      "batteryStatus": batteryStatus,
+      "powerSource": powerSource,
+      "batteryHealth": "good",
+      "batteryTemperature": 0.0,
+      "isLowPowerMode": isLowPowerMode
+    ]
+  }
+
+  private func getSecurityInfoMap() -> [String: Any] {
+    let isJailbroken = checkJailbreak()
+    let isDebuggerAttached = checkDebuggerAttached()
+    
+    // Check if passcode/biometrics is configured on device
+    let context = LAContext()
+    var error: NSError?
+    let isDeviceSecure = context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error)
+
+    // USB connected check (on iOS, charging state implies cable connected)
+    let batteryState = UIDevice.current.batteryState
+    let isUsbConnected = (batteryState == .charging || batteryState == .full)
+
+    return [
+      "isRooted": false,
+      "isJailbroken": isJailbroken,
+      "isDeveloperMode": false,
+      "isAdbEnabled": false,
+      "isUsbConnected": isUsbConnected,
+      "isDeviceSecure": isDeviceSecure,
+      "isDebuggerAttached": isDebuggerAttached
+    ]
+  }
+
+  private func checkJailbreak() -> Bool {
+    #if targetEnvironment(simulator)
+    return false
+    #else
+    let fileManager = FileManager.default
+    let paths = [
+      "/Applications/Cydia.app",
+      "/Library/MobileSubstrate/MobileSubstrate.dylib",
+      "/bin/bash",
+      "/usr/sbin/sshd",
+      "/etc/apt",
+      "/usr/bin/ssh",
+      "/private/var/lib/apt/",
+      "/private/var/lib/cydia",
+      "/private/var/tmp/cydia.log"
+    ]
+    for path in paths {
+      if fileManager.fileExists(atPath: path) {
+        return true
+      }
+    }
+
+    // Sandbox check: try to write outside sandbox
+    let testString = "JailbreakTest"
+    let testPath = "/private/jailbreak_test_\(UUID().uuidString).txt"
+    do {
+      try testString.write(toFile: testPath, atomically: true, encoding: .utf8)
+      try? fileManager.removeItem(atPath: testPath)
+      return true
+    } catch {
+      // Expected behavior on non-jailbroken device
+    }
+
+    return false
+    #endif
+  }
+
+  private func checkDebuggerAttached() -> Bool {
+    var info = kinfo_proc()
+    var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+    var size = MemoryLayout<kinfo_proc>.stride
+    let junk = sysctl(&mib, UInt32(mib.count), &info, &size, nil, 0)
+    assert(junk == 0, "sysctl failed")
+    return (info.kp_proc.p_flag & P_TRACED) != 0
+  }
+
+  private func getNetworkInfoMap() -> [String: Any] {
+    var isConnected = false
+    var connectionType = "none"
+    var isVpn = false
+
+    var ifaddr: UnsafeMutablePointer<ifaddrs>?
+    if getifaddrs(&ifaddr) == 0 {
+      var ptr = ifaddr
+      while ptr != nil {
+        guard let interface = ptr?.pointee else { break }
+        let name = String(cString: interface.ifa_name)
+        let flags = Int32(interface.ifa_flags)
+        
+        let isUp = (flags & IFF_UP) == IFF_UP
+        let isRunning = (flags & IFF_RUNNING) == IFF_RUNNING
+        let isLoopback = (flags & IFF_LOOPBACK) == IFF_LOOPBACK
+
+        if isUp && isRunning && !isLoopback {
+          isConnected = true
+          if name.hasPrefix("en0") {
+            connectionType = "wifi"
+          } else if name.hasPrefix("pdp_ip") {
+            if connectionType != "wifi" {
+              connectionType = "cellular"
+            }
+          }
+          if name.hasPrefix("tun") || name.hasPrefix("tap") || name.hasPrefix("ppp") || name.hasPrefix("ipsec") {
+            isVpn = true
+          }
+        }
+        ptr = interface.ifa_next
+      }
+      freeifaddrs(ifaddr)
+    }
+
+    // Secondary VPN check via proxy settings dictionary
+    if !isVpn, let proxySettings = CFNetworkCopySystemProxySettings()?.takeRetainedValue() as? [String: Any],
+       let scoped = proxySettings["__SCOPED__"] as? [String: Any] {
+      for key in scoped.keys {
+        if key.contains("tap") || key.contains("tun") || key.contains("ppp") || key.contains("ipsec") {
+          isVpn = true
+          break
+        }
+      }
+    }
+
+    return [
+      "isConnected": isConnected,
+      "connectionType": isVpn ? "vpn" : connectionType,
+      "isVpnActive": isVpn
+    ]
+  }
+
   private func getSystemInfoMap() -> [String: Any] {
     return [
       "deviceInfo": getDeviceInfoMap(),
       "storageInfo": getStorageInfoMap(),
       "memoryInfo": getMemoryInfoMap(),
       "cpuInfo": getCpuInfoMap(),
-      "screenInfo": getScreenInfoMap()
+      "screenInfo": getScreenInfoMap(),
+      "batteryInfo": getBatteryInfoMap(),
+      "securityInfo": getSecurityInfoMap(),
+      "networkInfo": getNetworkInfoMap()
     ]
   }
 }

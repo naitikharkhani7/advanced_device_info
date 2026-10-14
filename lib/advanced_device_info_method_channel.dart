@@ -79,6 +79,42 @@ class MethodChannelAdvancedDeviceInfo extends AdvancedDeviceInfoPlatform {
   }
 
   @override
+  Future<BatteryInfo> getBatteryInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getBatteryInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getBatteryInfo returned null',
+      );
+    }
+    return BatteryInfo.fromMap(map);
+  }
+
+  @override
+  Future<SecurityInfo> getSecurityInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getSecurityInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getSecurityInfo returned null',
+      );
+    }
+    return SecurityInfo.fromMap(map);
+  }
+
+  @override
+  Future<NetworkInfo> getNetworkInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getNetworkInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getNetworkInfo returned null',
+      );
+    }
+    return NetworkInfo.fromMap(map);
+  }
+
+  @override
   Future<SystemInfo> getSystemInfo() async {
     final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getSystemInfo');
     if (map == null) {
