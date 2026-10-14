@@ -26,8 +26,9 @@
 .packages
 .pub/
 .pub-cache/
-.pub-cache/
 build/
+pubspec.lock
+**/pubspec.lock
 
 # Generated files
 coverage/
