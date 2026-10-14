@@ -1,12 +1,8 @@
-import 'package:flutter/material.dart';
-import 'dart:async';
 import 'dart:math';
-
+import 'package:flutter/material.dart';
 import 'package:advanced_device_info/advanced_device_info.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -15,163 +11,128 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Advanced Device Info',
-      theme: ThemeData.dark().copyWith(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(useMaterial3: true).copyWith(
         scaffoldBackgroundColor: const Color(0xFF0F172A),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF6366F1),
-          secondary: Color(0xFFEC4899),
-          surface: Color(0xFF1E293B),
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E293B),
-          elevation: 0,
-          centerTitle: true,
-        ),
+        colorScheme: const ColorScheme.dark(primary: Color(0xFF6366F1), surface: Color(0xFF1E293B)),
         cardTheme: CardThemeData(
           color: const Color(0xFF1E293B),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 4,
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
-      home: const DashboardPage(),
+      home: const DeviceInfoDashboard(),
     );
   }
 }
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+/// Dashboard demonstrating senior-level asynchronous data fetching,
+/// reusable UI components, and clean separation of concerns.
+class DeviceInfoDashboard extends StatefulWidget {
+  const DeviceInfoDashboard({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  State<DeviceInfoDashboard> createState() => _DeviceInfoDashboardState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
-  bool _isLoading = true;
-  String? _errorMessage;
-  SystemInfo? _systemInfo;
+class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
+  late Future<SystemInfo> _deviceInfoFuture;
 
   @override
   void initState() {
     super.initState();
-    _fetchDeviceInfo();
+    _fetchData();
   }
 
-  Future<void> _fetchDeviceInfo() async {
+  void _fetchData() {
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      _deviceInfoFuture = AdvancedDeviceInfo.getSystemInfo();
     });
-
-    try {
-      final info = await AdvancedDeviceInfo.getSystemInfo();
-      setState(() {
-        _systemInfo = info;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  String _formatBytes(int bytes, {int decimals = 2}) {
-    if (bytes <= 0) return "0 B";
-    const suffixes = ["B", "KB", "MB", "GB", "TB"];
-    var i = (log(bytes) / log(1024)).floor();
-    return "${(bytes / pow(1024, i)).toStringAsFixed(decimals)} ${suffixes[i]}";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'DEVICE METRICS',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-            color: Colors.white,
-          ),
-        ),
+        title: const Text('DEVICE METRICS', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 18)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.indigoAccent),
-            onPressed: _fetchDeviceInfo,
+            icon: const Icon(Icons.refresh, color: Color(0xFF818CF8)),
+            tooltip: 'Refresh Metrics',
+            onPressed: _fetchData,
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF6366F1),
-              ),
-            )
-          : _errorMessage != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error loading device metrics:\n$_errorMessage',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.redAccent, fontSize: 16),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: _fetchDeviceInfo,
-                          child: const Text('Try Again'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _fetchDeviceInfo,
-                  color: const Color(0xFF6366F1),
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _buildHeaderCard(),
-                      const SizedBox(height: 16),
-                      _buildMetricsGrid(),
-                      const SizedBox(height: 16),
-                      _buildStorageCard(),
-                      const SizedBox(height: 16),
-                      _buildMemoryCard(),
-                      const SizedBox(height: 16),
-                      _buildBuildInfoCard(),
-                    ],
-                  ),
+      body: FutureBuilder<SystemInfo>(
+        future: _deviceInfoFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
+          }
+
+          if (snapshot.hasError) {
+            return _ErrorView(errorMessage: snapshot.error.toString(), onRetry: _fetchData);
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: Text('No system information available.'));
+          }
+
+          final info = snapshot.data!;
+          return RefreshIndicator(
+            onRefresh: () async => _fetchData(),
+            color: const Color(0xFF6366F1),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
+                _HeaderBanner(device: info.deviceInfo),
+                const SizedBox(height: 14),
+                _SpecsGrid(cpu: info.cpuInfo, screen: info.screenInfo),
+                const SizedBox(height: 14),
+                _ResourceUsageCard(
+                  title: 'STORAGE USAGE',
+                  icon: Icons.storage_rounded,
+                  accentColor: Colors.orangeAccent,
+                  usedBytes: info.storageInfo.usedStorage,
+                  totalBytes: info.storageInfo.totalStorage,
+                  freeBytes: info.storageInfo.freeStorage,
+                  usagePercent: info.storageInfo.usagePercentage,
                 ),
+                const SizedBox(height: 14),
+                _ResourceUsageCard(
+                  title: 'SYSTEM RAM',
+                  icon: Icons.memory_rounded,
+                  accentColor: Colors.tealAccent,
+                  usedBytes: info.memoryInfo.usedRam,
+                  totalBytes: info.memoryInfo.totalRam,
+                  freeBytes: info.memoryInfo.availableRam,
+                  usagePercent: info.memoryInfo.usagePercentage,
+                ),
+                if (info.deviceInfo.buildInfo.isNotEmpty) ...[const SizedBox(height: 14), _BuildInfoCard(buildInfo: info.deviceInfo.buildInfo)],
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
+}
 
-  Widget _buildHeaderCard() {
-    final dev = _systemInfo!.deviceInfo;
+class _HeaderBanner extends StatelessWidget {
+  final DeviceInfo device;
+
+  const _HeaderBanner({required this.device});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6366F1).withAlpha(76),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFFEC4899)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withAlpha(80), blurRadius: 14, offset: const Offset(0, 6))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,96 +142,91 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Expanded(
                 child: Text(
-                  dev.deviceName,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  device.deviceName,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (dev.isEmulator)
+              if (device.isEmulator)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                  decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(12)),
                   child: const Text(
                     'EMULATOR',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amberAccent,
-                    ),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.amberAccent),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            '${dev.manufacturer.toUpperCase()} • ${dev.model}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withAlpha(230),
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
+            '${device.manufacturer.toUpperCase()} • ${device.model}',
+            style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Row(
             children: [
-              const Icon(Icons.developer_mode, size: 16, color: Colors.white70),
-              const SizedBox(width: 8),
-              Text(
-                'Brand: ${dev.brand}',
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-              ),
+              const Icon(Icons.info_outline, size: 14, color: Colors.white60),
+              const SizedBox(width: 6),
+              Text('Brand: ${device.brand}', style: const TextStyle(fontSize: 12, color: Colors.white60)),
             ],
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildMetricsGrid() {
-    final cpu = _systemInfo!.cpuInfo;
-    final screen = _systemInfo!.screenInfo;
+/// Dual-column grid displaying CPU and Display specifications.
+class _SpecsGrid extends StatelessWidget {
+  final CpuInfo cpu;
+  final ScreenInfo screen;
 
+  const _SpecsGrid({required this.cpu, required this.screen});
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: _buildMetricCard(
+          child: _StatCard(
             title: 'CPU',
-            icon: Icons.memory, // cpu doesn't exist in standard Icons, we use memory
-            customIcon: const Icon(Icons.memory, color: Color(0xFF60A5FA), size: 32),
+            icon: Icons.developer_board_rounded,
+            iconColor: const Color(0xFF60A5FA),
             value: '${cpu.cores} Cores',
             subtitle: cpu.architecture,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 14),
         Expanded(
-          child: _buildMetricCard(
+          child: _StatCard(
             title: 'DISPLAY',
-            customIcon: const Icon(Icons.screenshot, color: Color(0xFF34D399), size: 32),
-            value: '${screen.width} x ${screen.height}',
+            icon: Icons.screenshot_monitor_rounded,
+            iconColor: const Color(0xFF34D399),
+            value: '${screen.width} × ${screen.height}',
             subtitle: '${screen.refreshRate.toInt()} Hz • @${screen.scale.toStringAsFixed(1)}x',
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildMetricCard({
-    required String title,
-    IconData? icon,
-    Widget? customIcon,
-    required String value,
-    required String subtitle,
-  }) {
+/// Reusable stat card for quick key-value metrics.
+class _StatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color iconColor;
+
+  const _StatCard({required this.title, required this.value, required this.subtitle, required this.icon, required this.iconColor});
+
+  @override
+  Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -279,280 +235,111 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white54,
-                    letterSpacing: 1.2,
-                  ),
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white54, letterSpacing: 1.1),
                 ),
-                customIcon ?? Icon(icon, color: Colors.blueAccent, size: 28),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.white60,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showStorageDialog(StorageInfo storage) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Row(
-          children: [
-            Icon(Icons.storage, color: Colors.orangeAccent),
-            SizedBox(width: 8),
-            Text('Storage Details'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDialogRow('Total Storage', _formatBytes(storage.totalStorage)),
-            const Divider(color: Colors.white12),
-            _buildDialogRow('Used Storage', _formatBytes(storage.usedStorage)),
-            const Divider(color: Colors.white12),
-            _buildDialogRow('Free Storage', _formatBytes(storage.freeStorage)),
-            const Divider(color: Colors.white12),
-            _buildDialogRow('Usage Percentage', '${storage.usagePercentage.toStringAsFixed(2)}%'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close', style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showMemoryDialog(MemoryInfo memory) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Row(
-          children: [
-            Icon(Icons.developer_board, color: Colors.tealAccent),
-            SizedBox(width: 8),
-            Text('Memory Details'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDialogRow('Total RAM', _formatBytes(memory.totalRam)),
-            const Divider(color: Colors.white12),
-            _buildDialogRow('Used RAM', _formatBytes(memory.usedRam)),
-            const Divider(color: Colors.white12),
-            _buildDialogRow('Available RAM', _formatBytes(memory.availableRam)),
-            const Divider(color: Colors.white12),
-            _buildDialogRow('Usage Percentage', '${memory.usagePercentage.toStringAsFixed(2)}%'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close', style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDialogRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.white70, fontSize: 14)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStorageCard() {
-    final storage = _systemInfo!.storageInfo;
-    final usagePercent = storage.usagePercentage / 100.0;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _showStorageDialog(storage),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.storage, color: Colors.orangeAccent),
-                  SizedBox(width: 8),
-                  Text(
-                    'STORAGE USAGE',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${storage.usagePercentage.toStringAsFixed(1)}% Used',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '${_formatBytes(storage.usedStorage)} / ${_formatBytes(storage.totalStorage)}',
-                    style: const TextStyle(fontSize: 13, color: Colors.white70),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: usagePercent.clamp(0.0, 1.0),
-                  minHeight: 12,
-                  backgroundColor: const Color(0xFF334155),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Available storage space: ${_formatBytes(storage.freeStorage)}',
-                style: const TextStyle(fontSize: 12, color: Colors.white60),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMemoryCard() {
-    final memory = _systemInfo!.memoryInfo;
-    final usagePercent = memory.usagePercentage / 100.0;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _showMemoryDialog(memory),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.developer_board, color: Colors.tealAccent),
-                  SizedBox(width: 8),
-                  Text(
-                    'SYSTEM RAM',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${memory.usagePercentage.toStringAsFixed(1)}% Used',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '${_formatBytes(memory.usedRam)} / ${_formatBytes(memory.totalRam)}',
-                    style: const TextStyle(fontSize: 13, color: Colors.white70),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: usagePercent.clamp(0.0, 1.0),
-                  minHeight: 12,
-                  backgroundColor: const Color(0xFF334155),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.tealAccent),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Available system memory: ${_formatBytes(memory.availableRam)}',
-                style: const TextStyle(fontSize: 12, color: Colors.white60),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-
-  Widget _buildBuildInfoCard() {
-    final dev = _systemInfo!.deviceInfo;
-    if (dev.buildInfo.isEmpty) return const SizedBox.shrink();
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.settings_suggest, color: Colors.purpleAccent),
-                SizedBox(width: 8),
-                Text(
-                  'DETAILED BUILD INFO',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                  ),
-                ),
+                Icon(icon, color: iconColor, size: 24),
               ],
             ),
             const SizedBox(height: 12),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 4),
+            Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.white60)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Generic, highly reusable resource card handling both Storage and RAM metrics.
+/// Eliminates code duplication for progress bars, percentage badges, and byte calculations.
+class _ResourceUsageCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color accentColor;
+  final int usedBytes;
+  final int totalBytes;
+  final int freeBytes;
+  final double usagePercent;
+
+  const _ResourceUsageCard({
+    required this.title,
+    required this.icon,
+    required this.accentColor,
+    required this.usedBytes,
+    required this.totalBytes,
+    required this.freeBytes,
+    required this.usagePercent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedUsage = (usagePercent / 100.0).clamp(0.0, 1.0);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: accentColor, size: 20),
+                const SizedBox(width: 8),
+                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('${usagePercent.toStringAsFixed(1)}% Used', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                Text('${usedBytes.toReadableBytes()} / ${totalBytes.toReadableBytes()}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: normalizedUsage,
+                minHeight: 10,
+                backgroundColor: const Color(0xFF334155),
+                valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('Available: ${freeBytes.toReadableBytes()}', style: const TextStyle(fontSize: 11, color: Colors.white60)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Expansion card detailing platform-specific hardware/OS build properties.
+class _BuildInfoCard extends StatelessWidget {
+  final Map<String, dynamic> buildInfo;
+
+  const _BuildInfoCard({required this.buildInfo});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: false,
+          leading: const Icon(Icons.settings_suggest_rounded, color: Colors.purpleAccent, size: 20),
+          title: const Text('DETAILED BUILD INFO', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [
             const Divider(color: Colors.white12),
-            ...dev.buildInfo.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
+            ...buildInfo.entries.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -560,30 +347,61 @@ class _DashboardPageState extends State<DashboardPage> {
                       flex: 2,
                       child: Text(
                         entry.key,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white54,
-                          fontSize: 13,
-                        ),
+                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white54, fontSize: 12),
                       ),
                     ),
                     Expanded(
                       flex: 3,
-                      child: Text(
-                        entry.value?.toString() ?? 'N/A',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                        ),
-                      ),
+                      child: Text(entry.value?.toString() ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 12)),
                     ),
                   ],
                 ),
-              );
-            }),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+/// Error view with retry action.
+class _ErrorView extends StatelessWidget {
+  final String errorMessage;
+  final VoidCallback onRetry;
+
+  const _ErrorView({required this.errorMessage, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 56, color: Colors.redAccent),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load metrics:\n$errorMessage',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('Try Again')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Clean extension on [int] to eliminate repeated formatBytes boilerplate.
+extension ByteFormatting on int {
+  String toReadableBytes({int decimals = 1}) {
+    if (this <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    final i = (log(this) / log(1024)).floor().clamp(0, suffixes.length - 1);
+    return '${(this / pow(1024, i)).toStringAsFixed(decimals)} ${suffixes[i]}';
   }
 }
