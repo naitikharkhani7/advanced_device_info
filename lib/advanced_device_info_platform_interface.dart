@@ -79,4 +79,25 @@ abstract class AdvancedDeviceInfoPlatform extends PlatformInterface {
   Future<LiveHardwareInfo> getLiveHardwareInfo() {
     throw UnimplementedError('getLiveHardwareInfo() has not been implemented.');
   }
+
+  Future<ThermalInfo> getThermalInfo() {
+    throw UnimplementedError('getThermalInfo() has not been implemented.');
+  }
+
+  Future<DisplayCapabilitiesInfo> getDisplayCapabilitiesInfo() {
+    throw UnimplementedError('getDisplayCapabilitiesInfo() has not been implemented.');
+  }
+
+  Future<PeripheralsInfo> getPeripheralsInfo() {
+    throw UnimplementedError('getPeripheralsInfo() has not been implemented.');
+  }
+
+  Future<AudioVolumeInfo> getAudioVolumeInfo() {
+    throw UnimplementedError('getAudioVolumeInfo() has not been implemented.');
+  }
+
+  Future<LocaleThemeInfo> getLocaleThemeInfo() {
+    throw UnimplementedError('getLocaleThemeInfo() has not been implemented.');
+  }
 }
+

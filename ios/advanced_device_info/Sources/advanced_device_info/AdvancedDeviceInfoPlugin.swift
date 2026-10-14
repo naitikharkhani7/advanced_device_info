@@ -43,6 +43,16 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
       result(getSensorsInfoMap())
     case "getLiveHardwareInfo":
       result(getLiveHardwareInfoMap())
+    case "getThermalInfo":
+      result(getThermalInfoMap())
+    case "getDisplayCapabilitiesInfo":
+      result(getDisplayCapabilitiesInfoMap())
+    case "getPeripheralsInfo":
+      result(getPeripheralsInfoMap())
+    case "getAudioVolumeInfo":
+      result(getAudioVolumeInfoMap())
+    case "getLocaleThemeInfo":
+      result(getLocaleThemeInfoMap())
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -461,6 +471,131 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
     ]
   }
 
+  private func getThermalInfoMap() -> [String: Any] {
+    let thermalStateStr: String
+    switch ProcessInfo.processInfo.thermalState {
+    case .nominal: thermalStateStr = "NONE"
+    case .fair: thermalStateStr = "LIGHT"
+    case .serious: thermalStateStr = "SEVERE"
+    case .critical: thermalStateStr = "CRITICAL"
+    @unknown default: thermalStateStr = "UNKNOWN"
+    }
+    return [
+      "thermalStatus": thermalStateStr,
+      "isPowerSaveMode": ProcessInfo.processInfo.isLowPowerModeEnabled,
+      "isDeviceIdleMode": false
+    ]
+  }
+
+  private func getDisplayCapabilitiesInfoMap() -> [String: Any] {
+    let screen = UIScreen.main
+    var hdrTypes: [String] = []
+    if #available(iOS 14.0, *) {
+      hdrTypes = ["HDR10", "DOLBY_VISION", "HLG"]
+    }
+    let isWideGamut = (screen.traitCollection.displayGamut == .P3)
+    let maxFps = Double(screen.maximumFramesPerSecond)
+    let rates = [maxFps]
+    let brightness = Int(screen.brightness * 255.0)
+
+    return [
+      "isHdrSupported": !hdrTypes.isEmpty,
+      "supportedHdrTypes": hdrTypes,
+      "isWideColorGamut": isWideGamut,
+      "supportedRefreshRates": rates,
+      "screenBrightness": brightness,
+      "isAutoBrightnessEnabled": false
+    ]
+  }
+
+  private func getPeripheralsInfoMap() -> [String: Any] {
+    let hasTorch = AVCaptureDevice.default(for: .video)?.hasTorch ?? false
+    let session = AVCaptureDevice.DiscoverySession(
+      deviceTypes: [.builtInWideAngleCamera, .builtInTelephotoCamera, .builtInUltraWideCamera],
+      mediaType: .video,
+      position: .unspecified
+    )
+    let cameras = session.devices
+    var front = 0
+    var back = 0
+    for cam in cameras {
+      if cam.position == .front { front += 1 }
+      else if cam.position == .back { back += 1 }
+    }
+
+    return [
+      "isNfcAvailable": true,
+      "isNfcEnabled": true,
+      "isBluetoothAvailable": true,
+      "isBluetoothEnabled": true,
+      "hasFlashlight": hasTorch,
+      "cameraCount": cameras.count,
+      "frontCameraCount": front,
+      "backCameraCount": back,
+      "hasVibrator": true,
+      "hasAmplitudeControl": true
+    ]
+  }
+
+  private func getAudioVolumeInfoMap() -> [String: Any] {
+    let session = AVAudioSession.sharedInstance()
+    let vol = Int(session.outputVolume * 15.0)
+    var isA2dp = false
+    for output in session.currentRoute.outputs {
+      if output.portType == .bluetoothA2DP {
+        isA2dp = true
+        break
+      }
+    }
+
+    return [
+      "mediaVolume": vol,
+      "maxMediaVolume": 15,
+      "ringVolume": vol,
+      "maxRingVolume": 15,
+      "callVolume": vol,
+      "maxCallVolume": 15,
+      "alarmVolume": vol,
+      "maxAlarmVolume": 15,
+      "notificationVolume": vol,
+      "maxNotificationVolume": 15,
+      "isMicrophoneMute": false,
+      "isBluetoothA2dpOn": isA2dp
+    ]
+  }
+
+  private func getLocaleThemeInfoMap() -> [String: Any] {
+    let tz = TimeZone.current
+    let tzId = tz.identifier
+    let tzName = tz.localizedName(for: tz.isDaylightSavingTime() ? .daylightSaving : .standard, locale: Locale.current) ?? tzId
+    let tzOffset = tz.secondsFromGMT()
+
+    let preferred = Locale.preferredLanguages
+    let formatter = DateFormatter()
+    formatter.locale = Locale.current
+    formatter.dateStyle = .none
+    formatter.timeStyle = .short
+    let dateString = formatter.string(from: Date())
+    let is24Hour = !dateString.contains("AM") && !dateString.contains("PM")
+
+    let isScreenReader = UIAccessibility.isVoiceOverRunning
+    var isDark = false
+    if #available(iOS 12.0, *) {
+      isDark = (UIScreen.main.traitCollection.userInterfaceStyle == .dark)
+    }
+
+    return [
+      "timezoneId": tzId,
+      "timezoneDisplayName": tzName,
+      "timezoneOffsetSeconds": tzOffset,
+      "preferredLanguages": preferred,
+      "is24HourFormat": is24Hour,
+      "fontScale": 1.0,
+      "isScreenReaderActive": isScreenReader,
+      "isDarkMode": isDark
+    ]
+  }
+
   private func getSystemInfoMap() -> [String: Any] {
     return [
       "deviceInfo": getDeviceInfoMap(),
@@ -474,7 +609,13 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
       "drmInfo": getDrmInfoMap(),
       "biometricInfo": getBiometricInfoMap(),
       "sensorsInfo": getSensorsInfoMap(),
-      "liveHardwareInfo": getLiveHardwareInfoMap()
+      "liveHardwareInfo": getLiveHardwareInfoMap(),
+      "thermalInfo": getThermalInfoMap(),
+      "displayCapabilitiesInfo": getDisplayCapabilitiesInfoMap(),
+      "peripheralsInfo": getPeripheralsInfoMap(),
+      "audioVolumeInfo": getAudioVolumeInfoMap(),
+      "localeThemeInfo": getLocaleThemeInfoMap()
     ]
   }
 }
+

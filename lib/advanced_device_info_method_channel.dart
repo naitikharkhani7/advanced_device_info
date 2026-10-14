@@ -173,4 +173,65 @@ class MethodChannelAdvancedDeviceInfo extends AdvancedDeviceInfoPlatform {
     }
     return LiveHardwareInfo.fromMap(map);
   }
+
+  @override
+  Future<ThermalInfo> getThermalInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getThermalInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getThermalInfo returned null',
+      );
+    }
+    return ThermalInfo.fromMap(map);
+  }
+
+  @override
+  Future<DisplayCapabilitiesInfo> getDisplayCapabilitiesInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getDisplayCapabilitiesInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getDisplayCapabilitiesInfo returned null',
+      );
+    }
+    return DisplayCapabilitiesInfo.fromMap(map);
+  }
+
+  @override
+  Future<PeripheralsInfo> getPeripheralsInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getPeripheralsInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getPeripheralsInfo returned null',
+      );
+    }
+    return PeripheralsInfo.fromMap(map);
+  }
+
+  @override
+  Future<AudioVolumeInfo> getAudioVolumeInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getAudioVolumeInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getAudioVolumeInfo returned null',
+      );
+    }
+    return AudioVolumeInfo.fromMap(map);
+  }
+
+  @override
+  Future<LocaleThemeInfo> getLocaleThemeInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getLocaleThemeInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getLocaleThemeInfo returned null',
+      );
+    }
+    return LocaleThemeInfo.fromMap(map);
+  }
 }
+

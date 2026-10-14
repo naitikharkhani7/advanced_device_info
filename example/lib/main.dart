@@ -102,6 +102,16 @@ class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
                 const SizedBox(height: 14),
                 _LiveHardwareCard(live: info.liveHardwareInfo),
                 const SizedBox(height: 14),
+                _ThermalCard(thermal: info.thermalInfo),
+                const SizedBox(height: 14),
+                _DisplayCapabilitiesCard(caps: info.displayCapabilitiesInfo),
+                const SizedBox(height: 14),
+                _PeripheralsCard(peripherals: info.peripheralsInfo),
+                const SizedBox(height: 14),
+                _AudioVolumeCard(audio: info.audioVolumeInfo),
+                const SizedBox(height: 14),
+                _LocaleThemeCard(locale: info.localeThemeInfo),
+                const SizedBox(height: 14),
                 _SecurityOverviewCard(security: info.securityInfo),
                 const SizedBox(height: 14),
                 _DrmAndBiometricCard(drm: info.drmInfo, biometric: info.biometricInfo),
@@ -317,6 +327,409 @@ class _LiveSignalRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Thermal & Power Saver status card.
+class _ThermalCard extends StatelessWidget {
+  final ThermalInfo thermal;
+
+  const _ThermalCard({required this.thermal});
+
+  @override
+  Widget build(BuildContext context) {
+    final isWarn = thermal.isThrottling;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.thermostat_rounded, color: Colors.deepOrangeAccent, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'THERMAL & POWER MODES',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isWarn ? Colors.red.withAlpha(50) : Colors.green.withAlpha(50),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isWarn ? Colors.redAccent : Colors.greenAccent,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    thermal.thermalStatus,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isWarn ? Colors.redAccent : Colors.greenAccent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _LiveSignalRow(
+              icon: Icons.speed_rounded,
+              label: 'Thermal Throttling State',
+              value: isWarn ? 'ACTIVE THROTTLING (${thermal.thermalStatus})' : 'NORMAL / NOMINAL',
+              isHighlighted: isWarn,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.battery_saver_rounded,
+              label: 'System Battery Saver Mode',
+              value: thermal.isPowerSaveMode ? 'ENABLED (POWER SAVER)' : 'OFF',
+              isHighlighted: thermal.isPowerSaveMode,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.bedtime_rounded,
+              label: 'Device Doze / Idle State',
+              value: thermal.isDeviceIdleMode ? 'DOZING (IDLE)' : 'ACTIVE',
+              isHighlighted: thermal.isDeviceIdleMode,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Display HDR capabilities, Wide Color Gamut, and Refresh Rate panel.
+class _DisplayCapabilitiesCard extends StatelessWidget {
+  final DisplayCapabilitiesInfo caps;
+
+  const _DisplayCapabilitiesCard({required this.caps});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.hdr_on_rounded, color: Colors.purpleAccent, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'DISPLAY HDR & COLOR MODES',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: caps.isHdrSupported ? Colors.purple.withAlpha(50) : Colors.white10,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: caps.isHdrSupported ? Colors.purpleAccent : Colors.white24,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    caps.isHdrSupported ? 'HDR READY' : 'SDR ONLY',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: caps.isHdrSupported ? Colors.purpleAccent : Colors.white70,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _LiveSignalRow(
+              icon: Icons.tv_rounded,
+              label: 'HDR Standards Supported',
+              value: caps.supportedHdrTypes.isNotEmpty
+                  ? caps.supportedHdrTypes.join(', ')
+                  : 'NONE',
+              isHighlighted: caps.isHdrSupported,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.palette_rounded,
+              label: 'Wide Color Gamut (DCI-P3)',
+              value: caps.isWideColorGamut ? 'SUPPORTED (DCI-P3)' : 'sRGB STANDARD',
+              isHighlighted: caps.isWideColorGamut,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.refresh_rounded,
+              label: 'Panel Refresh Rates',
+              value: caps.supportedRefreshRates.isNotEmpty
+                  ? caps.supportedRefreshRates.map((r) => '${r.toInt()}Hz').join(' / ')
+                  : 'Standard',
+              isHighlighted: false,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.brightness_medium_rounded,
+              label: 'Brightness & Auto Control',
+              value: caps.screenBrightness >= 0
+                  ? '${caps.screenBrightness}/255 ${caps.isAutoBrightnessEnabled ? "(Auto ON)" : "(Auto OFF)"}'
+                  : (caps.isAutoBrightnessEnabled ? 'Auto ON' : 'Manual'),
+              isHighlighted: caps.isAutoBrightnessEnabled,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Hardware peripherals (NFC, Bluetooth, Cameras, Torch, Vibrator).
+class _PeripheralsCard extends StatelessWidget {
+  final PeripheralsInfo peripherals;
+
+  const _PeripheralsCard({required this.peripherals});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.devices_other_rounded, color: Colors.lightBlueAccent, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'PERIPHERALS & CONNECTIVITY',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _LiveSignalRow(
+              icon: Icons.nfc_rounded,
+              label: 'NFC Chip Hardware',
+              value: peripherals.isNfcAvailable
+                  ? (peripherals.isNfcEnabled ? 'AVAILABLE & ENABLED' : 'AVAILABLE (OFF)')
+                  : 'NOT AVAILABLE',
+              isHighlighted: peripherals.isNfcEnabled,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.bluetooth_rounded,
+              label: 'Bluetooth Radio',
+              value: peripherals.isBluetoothAvailable
+                  ? (peripherals.isBluetoothEnabled ? 'ENABLED' : 'DISABLED')
+                  : 'NOT AVAILABLE',
+              isHighlighted: peripherals.isBluetoothEnabled,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.flashlight_on_rounded,
+              label: 'Camera Flashlight / Torch',
+              value: peripherals.hasFlashlight ? 'AVAILABLE' : 'NONE',
+              isHighlighted: peripherals.hasFlashlight,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.photo_camera_rounded,
+              label: 'Camera Lenses Detected',
+              value: 'Total ${peripherals.cameraCount} (${peripherals.backCameraCount} Rear, ${peripherals.frontCameraCount} Front)',
+              isHighlighted: false,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.vibration_rounded,
+              label: 'Haptic & Vibration Motor',
+              value: peripherals.hasVibrator
+                  ? (peripherals.hasAmplitudeControl ? 'ADVANCED HAPTICS (AMPLITUDE)' : 'STANDARD VIBRATION')
+                  : 'NO VIBRATOR',
+              isHighlighted: peripherals.hasAmplitudeControl,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Audio volume levels and microphone mute card.
+class _AudioVolumeCard extends StatelessWidget {
+  final AudioVolumeInfo audio;
+
+  const _AudioVolumeCard({required this.audio});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.volume_up_rounded, color: Colors.greenAccent, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'AUDIO VOLUMES & CONTROLS',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: audio.isMicrophoneMute ? Colors.red.withAlpha(50) : Colors.green.withAlpha(50),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: audio.isMicrophoneMute ? Colors.redAccent : Colors.greenAccent,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    audio.isMicrophoneMute ? 'MIC MUTED' : 'MIC ACTIVE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: audio.isMicrophoneMute ? Colors.redAccent : Colors.greenAccent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _LiveSignalRow(
+              icon: Icons.music_note_rounded,
+              label: 'Media Volume Level',
+              value: '${audio.mediaVolume} / ${audio.maxMediaVolume} (${audio.mediaVolumePercentage.round()}%)',
+              isHighlighted: audio.mediaVolume > 0,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.notifications_active_rounded,
+              label: 'Ringtone & Alert Volume',
+              value: '${audio.ringVolume} / ${audio.maxRingVolume}',
+              isHighlighted: false,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.phone_in_talk_rounded,
+              label: 'Voice Call Volume',
+              value: '${audio.callVolume} / ${audio.maxCallVolume}',
+              isHighlighted: false,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.alarm_rounded,
+              label: 'Alarm Volume',
+              value: '${audio.alarmVolume} / ${audio.maxAlarmVolume}',
+              isHighlighted: false,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.bluetooth_audio_rounded,
+              label: 'Bluetooth Audio (A2DP)',
+              value: audio.isBluetoothA2dpOn ? 'STREAMING ACTIVE' : 'INACTIVE',
+              isHighlighted: audio.isBluetoothA2dpOn,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Regional timezone, preferred languages, and accessibility theme card.
+class _LocaleThemeCard extends StatelessWidget {
+  final LocaleThemeInfo locale;
+
+  const _LocaleThemeCard({required this.locale});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.language_rounded, color: Colors.tealAccent, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'REGIONAL, THEME & ACCESSIBILITY',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _LiveSignalRow(
+              icon: Icons.schedule_rounded,
+              label: 'Device Timezone (UTC Offset)',
+              value: '${locale.timezoneId} (${locale.formattedUtcOffset})',
+              isHighlighted: false,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.translate_rounded,
+              label: 'Preferred System Languages',
+              value: locale.preferredLanguages.isNotEmpty
+                  ? locale.preferredLanguages.join(', ')
+                  : 'Default',
+              isHighlighted: false,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.access_time_filled_rounded,
+              label: 'Clock Format',
+              value: locale.is24HourFormat ? '24-Hour Format' : '12-Hour Format (AM/PM)',
+              isHighlighted: false,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.format_size_rounded,
+              label: 'System Font Scale Multiplier',
+              value: '${locale.fontScale.toStringAsFixed(2)}x Scale',
+              isHighlighted: (locale.fontScale - 1.0).abs() > 0.05,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.record_voice_over_rounded,
+              label: 'Screen Reader (TalkBack/VoiceOver)',
+              value: locale.isScreenReaderActive ? 'ACTIVE' : 'OFF',
+              isHighlighted: locale.isScreenReaderActive,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.dark_mode_rounded,
+              label: 'System Display Theme',
+              value: locale.isDarkMode ? 'DARK MODE' : 'LIGHT MODE',
+              isHighlighted: locale.isDarkMode,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -23,13 +23,27 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.MediaDrm
 import android.net.wifi.WifiManager
+import android.nfc.NfcAdapter
+import android.bluetooth.BluetoothAdapter
+import android.content.res.Configuration
+import android.os.LocaleList
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.telephony.TelephonyManager
+import android.view.Display
+import android.view.accessibility.AccessibilityManager
 import java.io.File
 import java.net.NetworkInterface
+import android.text.format.DateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.UUID
 
 /** AdvancedDeviceInfoPlugin */
@@ -93,6 +107,21 @@ class AdvancedDeviceInfoPlugin :
                 }
                 "getLiveHardwareInfo" -> {
                     result.success(getLiveHardwareInfoMap())
+                }
+                "getThermalInfo" -> {
+                    result.success(getThermalInfoMap())
+                }
+                "getDisplayCapabilitiesInfo" -> {
+                    result.success(getDisplayCapabilitiesInfoMap())
+                }
+                "getPeripheralsInfo" -> {
+                    result.success(getPeripheralsInfoMap())
+                }
+                "getAudioVolumeInfo" -> {
+                    result.success(getAudioVolumeInfoMap())
+                }
+                "getLocaleThemeInfo" -> {
+                    result.success(getLocaleThemeInfoMap())
                 }
                 else -> {
                     result.notImplemented()
@@ -387,7 +416,7 @@ class AdvancedDeviceInfoPlugin :
 
         // Verification of apps over USB
         val isVerificationOfAppsOverUsb = try {
-            Settings.Global.getInt(resolver, Settings.Global.PACKAGE_VERIFIER_USER_CONSENT, 0) != 0
+            Settings.Global.getInt(resolver, "package_verifier_user_consent", 0) != 0
         } catch (e: Exception) {
             false
         }
@@ -671,6 +700,287 @@ class AdvancedDeviceInfoPlugin :
         )
     }
 
+    private fun getThermalInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+        val pm = ctx.getSystemService(Context.POWER_SERVICE) as? PowerManager
+
+        val thermalStatus = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && pm != null) {
+            when (pm.currentThermalStatus) {
+                PowerManager.THERMAL_STATUS_NONE -> "NONE"
+                PowerManager.THERMAL_STATUS_LIGHT -> "LIGHT"
+                PowerManager.THERMAL_STATUS_MODERATE -> "MODERATE"
+                PowerManager.THERMAL_STATUS_SEVERE -> "SEVERE"
+                PowerManager.THERMAL_STATUS_CRITICAL -> "CRITICAL"
+                PowerManager.THERMAL_STATUS_EMERGENCY -> "EMERGENCY"
+                PowerManager.THERMAL_STATUS_SHUTDOWN -> "SHUTDOWN"
+                else -> "UNKNOWN"
+            }
+        } else {
+            "NONE"
+        }
+
+        val isPowerSaveMode = pm?.isPowerSaveMode ?: false
+        val isDeviceIdleMode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pm?.isDeviceIdleMode ?: false
+        } else {
+            false
+        }
+
+        return mapOf(
+            "thermalStatus" to thermalStatus,
+            "isPowerSaveMode" to isPowerSaveMode,
+            "isDeviceIdleMode" to isDeviceIdleMode
+        )
+    }
+
+    private fun getDisplayCapabilitiesInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+        val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+        val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try { ctx.display } catch (e: Exception) { wm?.defaultDisplay }
+        } else {
+            @Suppress("DEPRECATION")
+            wm?.defaultDisplay
+        }
+
+        var isHdr = false
+        val hdrTypes = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && display != null) {
+            try {
+                val caps = display.hdrCapabilities
+                if (caps != null && caps.supportedHdrTypes.isNotEmpty()) {
+                    isHdr = true
+                    for (t in caps.supportedHdrTypes) {
+                        when (t) {
+                            Display.HdrCapabilities.HDR_TYPE_HDR10 -> hdrTypes.add("HDR10")
+                            Display.HdrCapabilities.HDR_TYPE_DOLBY_VISION -> hdrTypes.add("DOLBY_VISION")
+                            Display.HdrCapabilities.HDR_TYPE_HLG -> hdrTypes.add("HLG")
+                            4 -> hdrTypes.add("HDR10_PLUS")
+                            else -> hdrTypes.add("HDR_TYPE_$t")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore HDR query error
+            }
+        }
+
+        val isWideGamut = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && display != null) {
+            try { display.isWideColorGamut } catch (e: Exception) { false }
+        } else {
+            false
+        }
+
+        val rates = mutableListOf<Double>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && display != null) {
+            try {
+                for (mode in display.supportedModes) {
+                    val rounded = Math.round(mode.refreshRate.toDouble() * 10.0) / 10.0
+                    if (!rates.contains(rounded)) {
+                        rates.add(rounded)
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore supported modes error
+            }
+        }
+        if (rates.isEmpty() && display != null) {
+            @Suppress("DEPRECATION")
+            rates.add(Math.round(display.refreshRate.toDouble() * 10.0) / 10.0)
+        }
+
+        val resolver = ctx.contentResolver
+        val brightness = try {
+            Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS, -1)
+        } catch (e: Exception) {
+            -1
+        }
+        val isAutoBrightness = try {
+            Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS_MODE, 0) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+        } catch (e: Exception) {
+            false
+        }
+
+        return mapOf(
+            "isHdrSupported" to isHdr,
+            "supportedHdrTypes" to hdrTypes,
+            "isWideColorGamut" to isWideGamut,
+            "supportedRefreshRates" to rates,
+            "screenBrightness" to brightness,
+            "isAutoBrightnessEnabled" to isAutoBrightness
+        )
+    }
+
+    private fun getPeripheralsInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+
+        val nfcAdapter = try {
+            NfcAdapter.getDefaultAdapter(ctx)
+        } catch (e: Exception) {
+            null
+        }
+        val isNfcAvailable = nfcAdapter != null
+        val isNfcEnabled = try { nfcAdapter?.isEnabled ?: false } catch (e: Exception) { false }
+
+        val btAdapter = try {
+            @Suppress("DEPRECATION")
+            BluetoothAdapter.getDefaultAdapter()
+        } catch (e: Exception) {
+            null
+        }
+        val isBtAvailable = btAdapter != null
+        val isBtEnabled = try { btAdapter?.isEnabled ?: false } catch (e: Exception) { false }
+
+        var totalCameras = 0
+        var frontCameras = 0
+        var backCameras = 0
+        var hasFlashlight = false
+
+        try {
+            val cm = ctx.getSystemService(Context.CAMERA_SERVICE) as? CameraManager
+            if (cm != null) {
+                val ids = cm.cameraIdList
+                totalCameras = ids.size
+                for (id in ids) {
+                    val chars = cm.getCameraCharacteristics(id)
+                    val facing = chars.get(CameraCharacteristics.LENS_FACING)
+                    if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                        frontCameras++
+                    } else if (facing == CameraCharacteristics.LENS_FACING_BACK) {
+                        backCameras++
+                    }
+                    val flashAvailable = chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)
+                    if (flashAvailable == true) {
+                        hasFlashlight = true
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Camera enumeration not supported or failed
+        }
+        if (!hasFlashlight) {
+            hasFlashlight = ctx.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_FLASH)
+        }
+
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vm = ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+            vm?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        }
+        val hasVibrator = vibrator?.hasVibrator() ?: false
+        val hasAmplitudeControl = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.hasAmplitudeControl() ?: false
+        } else {
+            false
+        }
+
+        return mapOf(
+            "isNfcAvailable" to isNfcAvailable,
+            "isNfcEnabled" to isNfcEnabled,
+            "isBluetoothAvailable" to isBtAvailable,
+            "isBluetoothEnabled" to isBtEnabled,
+            "hasFlashlight" to hasFlashlight,
+            "cameraCount" to totalCameras,
+            "frontCameraCount" to frontCameras,
+            "backCameraCount" to backCameras,
+            "hasVibrator" to hasVibrator,
+            "hasAmplitudeControl" to hasAmplitudeControl
+        )
+    }
+
+    private fun getAudioVolumeInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+        val am = ctx.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return emptyMap()
+
+        val mediaVol = try { am.getStreamVolume(AudioManager.STREAM_MUSIC) } catch (e: Exception) { 0 }
+        val maxMediaVol = try { am.getStreamMaxVolume(AudioManager.STREAM_MUSIC) } catch (e: Exception) { 0 }
+
+        val ringVol = try { am.getStreamVolume(AudioManager.STREAM_RING) } catch (e: Exception) { 0 }
+        val maxRingVol = try { am.getStreamMaxVolume(AudioManager.STREAM_RING) } catch (e: Exception) { 0 }
+
+        val callVol = try { am.getStreamVolume(AudioManager.STREAM_VOICE_CALL) } catch (e: Exception) { 0 }
+        val maxCallVol = try { am.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL) } catch (e: Exception) { 0 }
+
+        val alarmVol = try { am.getStreamVolume(AudioManager.STREAM_ALARM) } catch (e: Exception) { 0 }
+        val maxAlarmVol = try { am.getStreamMaxVolume(AudioManager.STREAM_ALARM) } catch (e: Exception) { 0 }
+
+        val notifVol = try { am.getStreamVolume(AudioManager.STREAM_NOTIFICATION) } catch (e: Exception) { 0 }
+        val maxNotifVol = try { am.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION) } catch (e: Exception) { 0 }
+
+        val isMicMute = try { am.isMicrophoneMute } catch (e: Exception) { false }
+        val isA2dp = try {
+            @Suppress("DEPRECATION")
+            am.isBluetoothA2dpOn
+        } catch (e: Exception) {
+            false
+        }
+
+        return mapOf(
+            "mediaVolume" to mediaVol,
+            "maxMediaVolume" to maxMediaVol,
+            "ringVolume" to ringVol,
+            "maxRingVolume" to maxRingVol,
+            "callVolume" to callVol,
+            "maxCallVolume" to maxCallVol,
+            "alarmVolume" to alarmVol,
+            "maxAlarmVolume" to maxAlarmVol,
+            "notificationVolume" to notifVol,
+            "maxNotificationVolume" to maxNotifVol,
+            "isMicrophoneMute" to isMicMute,
+            "isBluetoothA2dpOn" to isA2dp
+        )
+    }
+
+    private fun getLocaleThemeInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+
+        val tz = TimeZone.getDefault()
+        val tzId = tz.id ?: "UTC"
+        val tzName = tz.getDisplayName(tz.inDaylightTime(Date()), TimeZone.SHORT) ?: tzId
+        val tzOffset = (tz.rawOffset + (if (tz.inDaylightTime(Date())) tz.dstSavings else 0)) / 1000
+
+        val preferredLanguages = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val list = LocaleList.getDefault()
+            for (i in 0 until list.size()) {
+                preferredLanguages.add(list.get(i).toLanguageTag())
+            }
+        } else {
+            preferredLanguages.add(Locale.getDefault().toLanguageTag())
+        }
+
+        val is24Hour = try {
+            DateFormat.is24HourFormat(ctx)
+        } catch (e: Exception) {
+            false
+        }
+
+        val fontScale = ctx.resources.configuration.fontScale.toDouble()
+
+        val am = ctx.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
+        val isScreenReader = try {
+            am?.isTouchExplorationEnabled ?: false
+        } catch (e: Exception) {
+            false
+        }
+
+        val currentNightMode = ctx.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val isDarkMode = currentNightMode == Configuration.UI_MODE_NIGHT_YES
+
+        return mapOf(
+            "timezoneId" to tzId,
+            "timezoneDisplayName" to tzName,
+            "timezoneOffsetSeconds" to tzOffset,
+            "preferredLanguages" to preferredLanguages,
+            "is24HourFormat" to is24Hour,
+            "fontScale" to fontScale,
+            "isScreenReaderActive" to isScreenReader,
+            "isDarkMode" to isDarkMode
+        )
+    }
+
     private fun getSystemInfoMap(): Map<String, Any?> {
         return mapOf(
             "deviceInfo" to getDeviceInfoMap(),
@@ -684,7 +994,13 @@ class AdvancedDeviceInfoPlugin :
             "drmInfo" to getDrmInfoMap(),
             "biometricInfo" to getBiometricInfoMap(),
             "sensorsInfo" to getSensorsInfoMap(),
-            "liveHardwareInfo" to getLiveHardwareInfoMap()
+            "liveHardwareInfo" to getLiveHardwareInfoMap(),
+            "thermalInfo" to getThermalInfoMap(),
+            "displayCapabilitiesInfo" to getDisplayCapabilitiesInfoMap(),
+            "peripheralsInfo" to getPeripheralsInfoMap(),
+            "audioVolumeInfo" to getAudioVolumeInfoMap(),
+            "localeThemeInfo" to getLocaleThemeInfoMap()
         )
     }
 }
+

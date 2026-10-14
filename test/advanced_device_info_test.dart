@@ -126,6 +126,66 @@ class MockAdvancedDeviceInfoPlatform
       ));
 
   @override
+  Future<ThermalInfo> getThermalInfo() => Future.value(const ThermalInfo(
+        thermalStatus: 'NONE',
+        isPowerSaveMode: false,
+        isDeviceIdleMode: false,
+      ));
+
+  @override
+  Future<DisplayCapabilitiesInfo> getDisplayCapabilitiesInfo() =>
+      Future.value(const DisplayCapabilitiesInfo(
+        isHdrSupported: true,
+        supportedHdrTypes: ['HDR10', 'DOLBY_VISION'],
+        isWideColorGamut: true,
+        supportedRefreshRates: [60.0, 120.0],
+        screenBrightness: 180,
+        isAutoBrightnessEnabled: true,
+      ));
+
+  @override
+  Future<PeripheralsInfo> getPeripheralsInfo() => Future.value(const PeripheralsInfo(
+        isNfcAvailable: true,
+        isNfcEnabled: true,
+        isBluetoothAvailable: true,
+        isBluetoothEnabled: true,
+        hasFlashlight: true,
+        cameraCount: 3,
+        frontCameraCount: 1,
+        backCameraCount: 2,
+        hasVibrator: true,
+        hasAmplitudeControl: true,
+      ));
+
+  @override
+  Future<AudioVolumeInfo> getAudioVolumeInfo() => Future.value(const AudioVolumeInfo(
+        mediaVolume: 10,
+        maxMediaVolume: 15,
+        ringVolume: 5,
+        maxRingVolume: 7,
+        callVolume: 4,
+        maxCallVolume: 6,
+        alarmVolume: 6,
+        maxAlarmVolume: 7,
+        notificationVolume: 5,
+        maxNotificationVolume: 7,
+        isMicrophoneMute: false,
+        isBluetoothA2dpOn: false,
+      ));
+
+  @override
+  Future<LocaleThemeInfo> getLocaleThemeInfo() => Future.value(const LocaleThemeInfo(
+        timezoneId: 'Asia/Kolkata',
+        timezoneDisplayName: 'IST',
+        timezoneOffsetSeconds: 19800,
+        preferredLanguages: ['en-US', 'hi-IN'],
+        is24HourFormat: true,
+        fontScale: 1.0,
+        isScreenReaderActive: false,
+        isDarkMode: true,
+      ));
+
+  @override
   Future<SystemInfo> getSystemInfo() => Future.value(const SystemInfo(
         deviceInfo: DeviceInfo(
           deviceName: 'Mock Phone',
@@ -324,6 +384,44 @@ void main() {
       expect(info.simSlotCount, 2);
     });
 
+    test('getThermalInfo', () async {
+      final info = await AdvancedDeviceInfo.getThermalInfo();
+      expect(info.thermalStatus, 'NONE');
+      expect(info.isPowerSaveMode, false);
+      expect(info.isThrottling, false);
+    });
+
+    test('getDisplayCapabilitiesInfo', () async {
+      final info = await AdvancedDeviceInfo.getDisplayCapabilitiesInfo();
+      expect(info.isHdrSupported, true);
+      expect(info.supportedHdrTypes, contains('HDR10'));
+      expect(info.supportedRefreshRates, contains(120.0));
+      expect(info.isWideColorGamut, true);
+    });
+
+    test('getPeripheralsInfo', () async {
+      final info = await AdvancedDeviceInfo.getPeripheralsInfo();
+      expect(info.isNfcAvailable, true);
+      expect(info.hasFlashlight, true);
+      expect(info.cameraCount, 3);
+      expect(info.hasVibrator, true);
+    });
+
+    test('getAudioVolumeInfo', () async {
+      final info = await AdvancedDeviceInfo.getAudioVolumeInfo();
+      expect(info.mediaVolume, 10);
+      expect(info.maxMediaVolume, 15);
+      expect(info.isMicrophoneMute, false);
+    });
+
+    test('getLocaleThemeInfo', () async {
+      final info = await AdvancedDeviceInfo.getLocaleThemeInfo();
+      expect(info.timezoneId, 'Asia/Kolkata');
+      expect(info.is24HourFormat, true);
+      expect(info.formattedUtcOffset, '+05:30');
+      expect(info.isDarkMode, true);
+    });
+
     test('getSystemInfo', () async {
       final info = await AdvancedDeviceInfo.getSystemInfo();
       expect(info.deviceInfo.deviceName, 'Mock Phone');
@@ -333,3 +431,4 @@ void main() {
     });
   });
 }
+

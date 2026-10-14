@@ -73,4 +73,30 @@ class AdvancedDeviceInfo {
   static Future<LiveHardwareInfo> getLiveHardwareInfo() {
     return AdvancedDeviceInfoPlatform.instance.getLiveHardwareInfo();
   }
+
+  /// Retrieves thermal throttling status and battery saver modes.
+  static Future<ThermalInfo> getThermalInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getThermalInfo();
+  }
+
+  /// Retrieves display HDR support, wide color gamut, and refresh rate modes.
+  static Future<DisplayCapabilitiesInfo> getDisplayCapabilitiesInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getDisplayCapabilitiesInfo();
+  }
+
+  /// Retrieves onboard peripherals (NFC, Bluetooth, Cameras, Flashlight, Haptics).
+  static Future<PeripheralsInfo> getPeripheralsInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getPeripheralsInfo();
+  }
+
+  /// Retrieves audio volume stream levels and microphone mute status.
+  static Future<AudioVolumeInfo> getAudioVolumeInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getAudioVolumeInfo();
+  }
+
+  /// Retrieves timezone, preferred languages, font scale, accessibility, and theme info.
+  static Future<LocaleThemeInfo> getLocaleThemeInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getLocaleThemeInfo();
+  }
 }
+

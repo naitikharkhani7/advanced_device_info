@@ -741,6 +741,367 @@ class LiveHardwareInfo {
   String toString() => 'LiveHardwareInfo(${toMap()})';
 }
 
+/// Device thermal throttling status and power-saving modes.
+class ThermalInfo {
+  /// Thermal throttling status (e.g. "NONE", "LIGHT", "MODERATE", "SEVERE", "CRITICAL", or "NOMINAL").
+  final String thermalStatus;
+
+  /// Whether system battery saver / low-power mode is enabled.
+  final bool isPowerSaveMode;
+
+  /// Whether device is currently in idle / doze mode.
+  final bool isDeviceIdleMode;
+
+  const ThermalInfo({
+    required this.thermalStatus,
+    required this.isPowerSaveMode,
+    required this.isDeviceIdleMode,
+  });
+
+  factory ThermalInfo.fromMap(Map<dynamic, dynamic> map) {
+    return ThermalInfo(
+      thermalStatus: map['thermalStatus']?.toString().toUpperCase() ?? 'NONE',
+      isPowerSaveMode: map['isPowerSaveMode'] as bool? ?? false,
+      isDeviceIdleMode: map['isDeviceIdleMode'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'thermalStatus': thermalStatus,
+      'isPowerSaveMode': isPowerSaveMode,
+      'isDeviceIdleMode': isDeviceIdleMode,
+    };
+  }
+
+  /// Whether device is experiencing any significant thermal throttling.
+  bool get isThrottling =>
+      thermalStatus == 'MODERATE' ||
+      thermalStatus == 'SEVERE' ||
+      thermalStatus == 'CRITICAL' ||
+      thermalStatus == 'EMERGENCY' ||
+      thermalStatus == 'SHUTDOWN' ||
+      thermalStatus == 'SERIOUS';
+
+  @override
+  String toString() => 'ThermalInfo(${toMap()})';
+}
+
+/// Display HDR standards, wide color gamut, and refresh rate capabilities.
+class DisplayCapabilitiesInfo {
+  /// Whether high dynamic range (HDR) display playback is supported.
+  final bool isHdrSupported;
+
+  /// List of supported HDR standards (e.g., ["HDR10", "DOLBY_VISION", "HLG", "HDR10_PLUS"]).
+  final List<String> supportedHdrTypes;
+
+  /// Whether display supports wide color gamut (e.g. DCI-P3).
+  final bool isWideColorGamut;
+
+  /// All refresh rate frequencies supported by this display panel (e.g. [60.0, 90.0, 120.0]).
+  final List<double> supportedRefreshRates;
+
+  /// Current display brightness level (0 to 255), or -1 if unavailable.
+  final int screenBrightness;
+
+  /// Whether automatic / adaptive brightness is active.
+  final bool isAutoBrightnessEnabled;
+
+  const DisplayCapabilitiesInfo({
+    required this.isHdrSupported,
+    required this.supportedHdrTypes,
+    required this.isWideColorGamut,
+    required this.supportedRefreshRates,
+    required this.screenBrightness,
+    required this.isAutoBrightnessEnabled,
+  });
+
+  factory DisplayCapabilitiesInfo.fromMap(Map<dynamic, dynamic> map) {
+    return DisplayCapabilitiesInfo(
+      isHdrSupported: map['isHdrSupported'] as bool? ?? false,
+      supportedHdrTypes: (map['supportedHdrTypes'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      isWideColorGamut: map['isWideColorGamut'] as bool? ?? false,
+      supportedRefreshRates: (map['supportedRefreshRates'] as List<dynamic>?)
+              ?.map((e) => (e as num).toDouble())
+              .toList() ??
+          const [],
+      screenBrightness: (map['screenBrightness'] as num?)?.toInt() ?? -1,
+      isAutoBrightnessEnabled: map['isAutoBrightnessEnabled'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'isHdrSupported': isHdrSupported,
+      'supportedHdrTypes': supportedHdrTypes,
+      'isWideColorGamut': isWideColorGamut,
+      'supportedRefreshRates': supportedRefreshRates,
+      'screenBrightness': screenBrightness,
+      'isAutoBrightnessEnabled': isAutoBrightnessEnabled,
+    };
+  }
+
+  @override
+  String toString() => 'DisplayCapabilitiesInfo(${toMap()})';
+}
+
+/// Onboard hardware peripherals (NFC, Bluetooth, Cameras, Flashlight, Haptics).
+class PeripheralsInfo {
+  /// Whether NFC hardware chip is present on this device.
+  final bool isNfcAvailable;
+
+  /// Whether NFC adapter is currently toggled on.
+  final bool isNfcEnabled;
+
+  /// Whether Bluetooth radio hardware is present.
+  final bool isBluetoothAvailable;
+
+  /// Whether Bluetooth adapter is currently toggled on.
+  final bool isBluetoothEnabled;
+
+  /// Whether device has an LED camera flashlight / torch.
+  final bool hasFlashlight;
+
+  /// Total number of physical camera lenses detected.
+  final int cameraCount;
+
+  /// Number of front-facing / selfie cameras.
+  final int frontCameraCount;
+
+  /// Number of rear-facing cameras.
+  final int backCameraCount;
+
+  /// Whether device has a vibration motor.
+  final bool hasVibrator;
+
+  /// Whether vibration motor supports advanced amplitude / haptic modulation.
+  final bool hasAmplitudeControl;
+
+  const PeripheralsInfo({
+    required this.isNfcAvailable,
+    required this.isNfcEnabled,
+    required this.isBluetoothAvailable,
+    required this.isBluetoothEnabled,
+    required this.hasFlashlight,
+    required this.cameraCount,
+    required this.frontCameraCount,
+    required this.backCameraCount,
+    required this.hasVibrator,
+    required this.hasAmplitudeControl,
+  });
+
+  factory PeripheralsInfo.fromMap(Map<dynamic, dynamic> map) {
+    return PeripheralsInfo(
+      isNfcAvailable: map['isNfcAvailable'] as bool? ?? false,
+      isNfcEnabled: map['isNfcEnabled'] as bool? ?? false,
+      isBluetoothAvailable: map['isBluetoothAvailable'] as bool? ?? false,
+      isBluetoothEnabled: map['isBluetoothEnabled'] as bool? ?? false,
+      hasFlashlight: map['hasFlashlight'] as bool? ?? false,
+      cameraCount: (map['cameraCount'] as num?)?.toInt() ?? 0,
+      frontCameraCount: (map['frontCameraCount'] as num?)?.toInt() ?? 0,
+      backCameraCount: (map['backCameraCount'] as num?)?.toInt() ?? 0,
+      hasVibrator: map['hasVibrator'] as bool? ?? false,
+      hasAmplitudeControl: map['hasAmplitudeControl'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'isNfcAvailable': isNfcAvailable,
+      'isNfcEnabled': isNfcEnabled,
+      'isBluetoothAvailable': isBluetoothAvailable,
+      'isBluetoothEnabled': isBluetoothEnabled,
+      'hasFlashlight': hasFlashlight,
+      'cameraCount': cameraCount,
+      'frontCameraCount': frontCameraCount,
+      'backCameraCount': backCameraCount,
+      'hasVibrator': hasVibrator,
+      'hasAmplitudeControl': hasAmplitudeControl,
+    };
+  }
+
+  @override
+  String toString() => 'PeripheralsInfo(${toMap()})';
+}
+
+/// Volume levels across audio streams and microphone state.
+class AudioVolumeInfo {
+  /// Current media playback volume.
+  final int mediaVolume;
+
+  /// Maximum possible media volume index.
+  final int maxMediaVolume;
+
+  /// Current ringtone volume.
+  final int ringVolume;
+
+  /// Maximum possible ringtone volume index.
+  final int maxRingVolume;
+
+  /// Current in-call voice volume.
+  final int callVolume;
+
+  /// Maximum possible in-call voice volume index.
+  final int maxCallVolume;
+
+  /// Current alarm volume.
+  final int alarmVolume;
+
+  /// Maximum possible alarm volume index.
+  final int maxAlarmVolume;
+
+  /// Current notification sound volume.
+  final int notificationVolume;
+
+  /// Maximum possible notification sound volume index.
+  final int maxNotificationVolume;
+
+  /// Whether microphone is muted at hardware / system level.
+  final bool isMicrophoneMute;
+
+  /// Whether a high-fidelity Bluetooth audio profile (A2DP) is actively streaming.
+  final bool isBluetoothA2dpOn;
+
+  const AudioVolumeInfo({
+    required this.mediaVolume,
+    required this.maxMediaVolume,
+    required this.ringVolume,
+    required this.maxRingVolume,
+    required this.callVolume,
+    required this.maxCallVolume,
+    required this.alarmVolume,
+    required this.maxAlarmVolume,
+    required this.notificationVolume,
+    required this.maxNotificationVolume,
+    required this.isMicrophoneMute,
+    required this.isBluetoothA2dpOn,
+  });
+
+  factory AudioVolumeInfo.fromMap(Map<dynamic, dynamic> map) {
+    return AudioVolumeInfo(
+      mediaVolume: (map['mediaVolume'] as num?)?.toInt() ?? 0,
+      maxMediaVolume: (map['maxMediaVolume'] as num?)?.toInt() ?? 0,
+      ringVolume: (map['ringVolume'] as num?)?.toInt() ?? 0,
+      maxRingVolume: (map['maxRingVolume'] as num?)?.toInt() ?? 0,
+      callVolume: (map['callVolume'] as num?)?.toInt() ?? 0,
+      maxCallVolume: (map['maxCallVolume'] as num?)?.toInt() ?? 0,
+      alarmVolume: (map['alarmVolume'] as num?)?.toInt() ?? 0,
+      maxAlarmVolume: (map['maxAlarmVolume'] as num?)?.toInt() ?? 0,
+      notificationVolume: (map['notificationVolume'] as num?)?.toInt() ?? 0,
+      maxNotificationVolume: (map['maxNotificationVolume'] as num?)?.toInt() ?? 0,
+      isMicrophoneMute: map['isMicrophoneMute'] as bool? ?? false,
+      isBluetoothA2dpOn: map['isBluetoothA2dpOn'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'mediaVolume': mediaVolume,
+      'maxMediaVolume': maxMediaVolume,
+      'ringVolume': ringVolume,
+      'maxRingVolume': maxRingVolume,
+      'callVolume': callVolume,
+      'maxCallVolume': maxCallVolume,
+      'alarmVolume': alarmVolume,
+      'maxAlarmVolume': maxAlarmVolume,
+      'notificationVolume': notificationVolume,
+      'maxNotificationVolume': maxNotificationVolume,
+      'isMicrophoneMute': isMicrophoneMute,
+      'isBluetoothA2dpOn': isBluetoothA2dpOn,
+    };
+  }
+
+  /// Media volume percentage between 0.0 and 100.0.
+  double get mediaVolumePercentage =>
+      maxMediaVolume > 0 ? (mediaVolume / maxMediaVolume) * 100 : 0.0;
+
+  @override
+  String toString() => 'AudioVolumeInfo(${toMap()})';
+}
+
+/// Regional timezone, preferred locales, font scaling, accessibility, and theme info.
+class LocaleThemeInfo {
+  /// Canonical timezone identifier (e.g., "Asia/Kolkata", "America/New_York").
+  final String timezoneId;
+
+  /// Human-readable timezone name (e.g. "India Standard Time").
+  final String timezoneDisplayName;
+
+  /// Timezone offset from UTC in seconds.
+  final int timezoneOffsetSeconds;
+
+  /// User's ordered list of preferred system languages (e.g., ["en-US", "hi-IN"]).
+  final List<String> preferredLanguages;
+
+  /// Whether system time display is configured for 24-hour mode.
+  final bool is24HourFormat;
+
+  /// Accessibility / system font scale multiplier (1.0 = normal).
+  final double fontScale;
+
+  /// Whether accessibility screen reader (TalkBack / VoiceOver) is active.
+  final bool isScreenReaderActive;
+
+  /// Whether system is operating in dark mode.
+  final bool isDarkMode;
+
+  const LocaleThemeInfo({
+    required this.timezoneId,
+    required this.timezoneDisplayName,
+    required this.timezoneOffsetSeconds,
+    required this.preferredLanguages,
+    required this.is24HourFormat,
+    required this.fontScale,
+    required this.isScreenReaderActive,
+    required this.isDarkMode,
+  });
+
+  factory LocaleThemeInfo.fromMap(Map<dynamic, dynamic> map) {
+    return LocaleThemeInfo(
+      timezoneId: map['timezoneId']?.toString() ?? 'UTC',
+      timezoneDisplayName: map['timezoneDisplayName']?.toString() ?? 'UTC',
+      timezoneOffsetSeconds: (map['timezoneOffsetSeconds'] as num?)?.toInt() ?? 0,
+      preferredLanguages: (map['preferredLanguages'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      is24HourFormat: map['is24HourFormat'] as bool? ?? false,
+      fontScale: (map['fontScale'] as num?)?.toDouble() ?? 1.0,
+      isScreenReaderActive: map['isScreenReaderActive'] as bool? ?? false,
+      isDarkMode: map['isDarkMode'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'timezoneId': timezoneId,
+      'timezoneDisplayName': timezoneDisplayName,
+      'timezoneOffsetSeconds': timezoneOffsetSeconds,
+      'preferredLanguages': preferredLanguages,
+      'is24HourFormat': is24HourFormat,
+      'fontScale': fontScale,
+      'isScreenReaderActive': isScreenReaderActive,
+      'isDarkMode': isDarkMode,
+    };
+  }
+
+  /// Formatted UTC offset string (e.g., "+05:30" or "-04:00").
+  String get formattedUtcOffset {
+    final totalMinutes = (timezoneOffsetSeconds / 60).round();
+    final sign = totalMinutes >= 0 ? '+' : '-';
+    final absMinutes = totalMinutes.abs();
+    final hours = (absMinutes ~/ 60).toString().padLeft(2, '0');
+    final minutes = (absMinutes % 60).toString().padLeft(2, '0');
+    return '$sign$hours:$minutes';
+  }
+
+  @override
+  String toString() => 'LocaleThemeInfo(${toMap()})';
+}
+
 /// Aggregated system-wide information containing all hardware and security metrics.
 class SystemInfo {
   /// General device metadata.
@@ -778,6 +1139,21 @@ class SystemInfo {
 
   /// Live hardware states (screen interactive, wifi, call, headphones, SIM slots).
   final LiveHardwareInfo liveHardwareInfo;
+
+  /// Thermal throttling status and power saving modes.
+  final ThermalInfo thermalInfo;
+
+  /// Advanced display HDR, color gamut, and refresh rate modes.
+  final DisplayCapabilitiesInfo displayCapabilitiesInfo;
+
+  /// Peripherals including NFC, Bluetooth, cameras, flashlight, and vibrator.
+  final PeripheralsInfo peripheralsInfo;
+
+  /// Volume levels across audio streams and microphone state.
+  final AudioVolumeInfo audioVolumeInfo;
+
+  /// Regional timezone, preferred languages, font scaling, and theme info.
+  final LocaleThemeInfo localeThemeInfo;
 
   const SystemInfo({
     required this.deviceInfo,
@@ -817,6 +1193,55 @@ class SystemInfo {
       isHeadphonesConnected: false,
       simSlotCount: 1,
     ),
+    this.thermalInfo = const ThermalInfo(
+      thermalStatus: 'NONE',
+      isPowerSaveMode: false,
+      isDeviceIdleMode: false,
+    ),
+    this.displayCapabilitiesInfo = const DisplayCapabilitiesInfo(
+      isHdrSupported: false,
+      supportedHdrTypes: [],
+      isWideColorGamut: false,
+      supportedRefreshRates: [],
+      screenBrightness: -1,
+      isAutoBrightnessEnabled: false,
+    ),
+    this.peripheralsInfo = const PeripheralsInfo(
+      isNfcAvailable: false,
+      isNfcEnabled: false,
+      isBluetoothAvailable: false,
+      isBluetoothEnabled: false,
+      hasFlashlight: false,
+      cameraCount: 0,
+      frontCameraCount: 0,
+      backCameraCount: 0,
+      hasVibrator: false,
+      hasAmplitudeControl: false,
+    ),
+    this.audioVolumeInfo = const AudioVolumeInfo(
+      mediaVolume: 0,
+      maxMediaVolume: 0,
+      ringVolume: 0,
+      maxRingVolume: 0,
+      callVolume: 0,
+      maxCallVolume: 0,
+      alarmVolume: 0,
+      maxAlarmVolume: 0,
+      notificationVolume: 0,
+      maxNotificationVolume: 0,
+      isMicrophoneMute: false,
+      isBluetoothA2dpOn: false,
+    ),
+    this.localeThemeInfo = const LocaleThemeInfo(
+      timezoneId: 'UTC',
+      timezoneDisplayName: 'UTC',
+      timezoneOffsetSeconds: 0,
+      preferredLanguages: [],
+      is24HourFormat: false,
+      fontScale: 1.0,
+      isScreenReaderActive: false,
+      isDarkMode: false,
+    ),
   });
 
   /// Creates a [SystemInfo] from a nested map.
@@ -834,6 +1259,15 @@ class SystemInfo {
       biometricInfo: BiometricInfo.fromMap(map['biometricInfo'] as Map? ?? const {}),
       sensorsInfo: SensorsInfo.fromMap(map['sensorsInfo'] as Map? ?? const {}),
       liveHardwareInfo: LiveHardwareInfo.fromMap(map['liveHardwareInfo'] as Map? ?? const {}),
+      thermalInfo: ThermalInfo.fromMap(map['thermalInfo'] as Map? ?? const {}),
+      displayCapabilitiesInfo: DisplayCapabilitiesInfo.fromMap(
+          map['displayCapabilitiesInfo'] as Map? ?? const {}),
+      peripheralsInfo:
+          PeripheralsInfo.fromMap(map['peripheralsInfo'] as Map? ?? const {}),
+      audioVolumeInfo:
+          AudioVolumeInfo.fromMap(map['audioVolumeInfo'] as Map? ?? const {}),
+      localeThemeInfo:
+          LocaleThemeInfo.fromMap(map['localeThemeInfo'] as Map? ?? const {}),
     );
   }
 
@@ -852,6 +1286,11 @@ class SystemInfo {
       'biometricInfo': biometricInfo.toMap(),
       'sensorsInfo': sensorsInfo.toMap(),
       'liveHardwareInfo': liveHardwareInfo.toMap(),
+      'thermalInfo': thermalInfo.toMap(),
+      'displayCapabilitiesInfo': displayCapabilitiesInfo.toMap(),
+      'peripheralsInfo': peripheralsInfo.toMap(),
+      'audioVolumeInfo': audioVolumeInfo.toMap(),
+      'localeThemeInfo': localeThemeInfo.toMap(),
     };
   }
 
