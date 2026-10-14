@@ -140,10 +140,6 @@ class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
   }
 }
 
-// =============================================================================
-// REUSABLE PRESENTATIONAL WIDGETS
-// =============================================================================
-
 /// Top gradient banner presenting core device branding and emulator status.
 class _HeaderBanner extends StatelessWidget {
   final DeviceInfo device;

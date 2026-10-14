@@ -112,8 +112,6 @@ class StorageInfo {
     };
   }
 
-  // --- Convenience Getters & Formatters ---
-
   /// Total storage converted to Gigabytes (GB).
   double get totalStorageGB => totalStorage / (1024 * 1024 * 1024);
 
@@ -193,8 +191,6 @@ class MemoryInfo {
       'usagePercentage': usagePercentage,
     };
   }
-
-  // --- Convenience Getters & Formatters ---
 
   /// Total physical RAM converted to Gigabytes (GB).
   double get totalRamGB => totalRam / (1024 * 1024 * 1024);

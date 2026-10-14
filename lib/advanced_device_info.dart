@@ -4,7 +4,7 @@ import 'src/device_info_models.dart';
 export 'src/device_info_models.dart';
 
 class AdvancedDeviceInfo {
-  /// Keep the original instance method from the plugin template.
+  /// Retrieves the platform version string.
   Future<String?> getPlatformVersion() {
     return AdvancedDeviceInfoPlatform.instance.getPlatformVersion();
   }
