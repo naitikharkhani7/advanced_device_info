@@ -1,3 +1,7 @@
+## 0.0.2
+
+* Automated release of version 0.0.2.
+
 ## 0.0.1
 
 * Initial release of `advanced_device_info` containing Core Device Information (Phase 1):
