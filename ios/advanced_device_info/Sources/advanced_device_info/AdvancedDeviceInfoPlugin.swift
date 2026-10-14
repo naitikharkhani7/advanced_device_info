@@ -54,12 +54,36 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
       modelIdentifier = String(cString: machine)
     }
     
+    var uts = utsname()
+    uname(&uts)
+    let kernelVersion = withUnsafePointer(to: &uts.release) {
+      $0.withMemoryRebound(to: CChar.self, capacity: 1) { ptr in
+        String(cString: ptr)
+      }
+    }
+    
+    let uptimeSeconds = ProcessInfo.processInfo.systemUptime
+    let activeProcessorCount = ProcessInfo.processInfo.activeProcessorCount
+    
+    let thermalStateStr: String
+    switch ProcessInfo.processInfo.thermalState {
+    case .nominal: thermalStateStr = "nominal"
+    case .fair: thermalStateStr = "fair"
+    case .serious: thermalStateStr = "serious"
+    case .critical: thermalStateStr = "critical"
+    @unknown default: thermalStateStr = "unknown"
+    }
+    
     let buildInfo: [String: Any] = [
       "systemName": device.systemName,
       "systemVersion": device.systemVersion,
       "modelIdentifier": modelIdentifier,
       "localizedModel": device.localizedModel,
-      "identifierForVendor": device.identifierForVendor?.uuidString ?? ""
+      "identifierForVendor": device.identifierForVendor?.uuidString ?? "",
+      "kernelVersion": kernelVersion,
+      "uptimeSeconds": uptimeSeconds,
+      "activeProcessorCount": activeProcessorCount,
+      "thermalState": thermalStateStr
     ]
     
     #if targetEnvironment(simulator)
@@ -234,6 +258,10 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
       "isJailbroken": isJailbroken,
       "isDeveloperMode": false,
       "isAdbEnabled": false,
+      "isWirelessDebuggingEnabled": false,
+      "isStayAwake": false,
+      "isMockLocation": false,
+      "isVerificationOfAppsOverUsb": false,
       "isUsbConnected": isUsbConnected,
       "isDeviceSecure": isDeviceSecure,
       "isDebuggerAttached": isDebuggerAttached

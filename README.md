@@ -12,15 +12,18 @@ A production-ready Flutter plugin for retrieving comprehensive system-level devi
 
 # ✨ Features
 
-## 🛡️ Security & Integrity (Fintech / Anti-Fraud)
-- **Root Detection** (Android `su` binary, test-keys, Magisk detection)
-- **Jailbreak Detection** (iOS Cydia, substrate, sandbox integrity escape)
-- **Developer Options Detection** (Check if Developer Mode is enabled in settings)
-- **USB Debugging / ADB Detection** (Check if ADB is active)
-- **USB Cable Connection Status** (Detect if phone is plugged into a USB cable/computer)
-- **Screen Lock Security** (Check if PIN, Pattern, Password, or Biometrics are set)
-- **Native Debugger Detection** (Check if a debugger is actively attached)
-- **`isCompromised` Convenience Flag**
+## 🛡️ Security, Developer Mode & Anti-Fraud Suite
+- **Developer Options Detection** (`isDeveloperMode`) - Check if Developer Mode is enabled
+- **USB Debugging / ADB Detection** (`isAdbEnabled`) - Check if ADB debugging is active
+- **Wireless Debugging (Wi-Fi ADB)** (`isWirelessDebuggingEnabled`) - Detect Android 11+ wireless ADB
+- **USB Cable Connection State** (`isUsbConnected`) - Detect if phone is plugged into a USB cable/computer
+- **Fake GPS / Mock Location Detection** (`isMockLocation`) - Detect mock location providers
+- **Stay Awake While Charging** (`isStayAwake`) - Detect screen stay awake developer setting
+- **USB App Package Verification** (`isVerificationOfAppsOverUsb`) - Package verification over ADB
+- **Root & Jailbreak Detection** (`isRooted`, `isJailbroken`) - Multi-layer integrity check
+- **Screen Lock Security** (`isDeviceSecure`) - Check if PIN, Pattern, Password, or Biometrics are set
+- **Native Debugger Detection** (`isDebuggerAttached`) - Check if a debugger is actively attached
+- **`isCompromised` Convenience Flag** - Combines root, jailbreak, debugger, and mock GPS checks
 
 ---
 
@@ -41,14 +44,17 @@ A production-ready Flutter plugin for retrieving comprehensive system-level devi
 
 ---
 
-## 📱 Device Information
-- Device Name
-- Manufacturer
-- Brand
-- Model
-- Build ID, Display, Fingerprint, Hardware
-- SDK Version & OS Release
-- Emulator / Simulator Detection
+## 📱 About Phone & System Specifications
+- **Device Branding**: Name, Manufacturer, Brand, Model, Board, Hardware
+- **OS Version & Codename**: Android Release, iOS Version, Codename, Incremental
+- **Security Patch Level**: Android Security Patch date (`securityPatch`)
+- **Kernel Version**: OS Kernel release (`kernelVersion`)
+- **Baseband / Radio Firmware**: Cellular Radio Version (`radioVersion`)
+- **Bootloader Version**: Bootloader identifier (`bootloader`)
+- **CPU Architectures**: Supported ABIs (`supportedAbis`)
+- **System Uptime**: Formatted uptime string (`formattedUptime`, e.g. "2d 4h 15m")
+- **Build Fingerprint & ID**: Display, Fingerprint, Host, User, Build Time
+- **Emulator / Simulator Detection**: Hardware & brand heuristic verification
 
 ---
 

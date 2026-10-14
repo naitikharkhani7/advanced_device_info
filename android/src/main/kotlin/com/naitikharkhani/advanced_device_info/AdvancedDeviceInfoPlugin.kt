@@ -13,6 +13,7 @@ import android.os.Debug
 import android.os.Environment
 import android.os.PowerManager
 import android.os.StatFs
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.WindowManager
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -101,9 +102,32 @@ class AdvancedDeviceInfoPlugin :
             deviceName = Build.MODEL
         }
 
+        val securityPatch = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Build.VERSION.SECURITY_PATCH
+        } else {
+            "N/A"
+        }
+        val radioVersion = try {
+            Build.getRadioVersion() ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+        val supportedAbis = Build.SUPPORTED_ABIS.joinToString(", ")
+        val kernelVersion = System.getProperty("os.version") ?: "Unknown"
+        val uptimeMillis = SystemClock.elapsedRealtime()
+
         val buildInfo = mapOf(
             "release" to Build.VERSION.RELEASE,
             "sdkInt" to Build.VERSION.SDK_INT,
+            "codename" to Build.VERSION.CODENAME,
+            "incremental" to Build.VERSION.INCREMENTAL,
+            "securityPatch" to securityPatch,
+            "kernelVersion" to kernelVersion,
+            "radioVersion" to radioVersion,
+            "bootloader" to Build.BOOTLOADER,
+            "board" to Build.BOARD,
+            "supportedAbis" to supportedAbis,
+            "uptimeMillis" to uptimeMillis,
             "id" to Build.ID,
             "display" to Build.DISPLAY,
             "fingerprint" to Build.FINGERPRINT,
@@ -111,7 +135,10 @@ class AdvancedDeviceInfoPlugin :
             "host" to Build.HOST,
             "device" to Build.DEVICE,
             "product" to Build.PRODUCT,
-            "type" to Build.TYPE
+            "type" to Build.TYPE,
+            "tags" to Build.TAGS,
+            "user" to Build.USER,
+            "time" to Build.TIME
         )
 
         val isEmulator = (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
@@ -315,6 +342,36 @@ class AdvancedDeviceInfoPlugin :
         val isUsbPlugged = (plugged == BatteryManager.BATTERY_PLUGGED_USB)
         val isUsbConnected = usbConnectedState || isUsbPlugged
 
+        // Wireless debugging check (Android 11+)
+        val isWirelessDebuggingEnabled = try {
+            Settings.Global.getInt(resolver, "adb_wifi_enabled", 0) != 0
+        } catch (e: Exception) {
+            false
+        }
+
+        // Stay awake while charging (Developer option)
+        val isStayAwake = try {
+            Settings.Global.getInt(resolver, Settings.Global.STAY_ON_WHILE_PLUGGED_IN, 0) != 0
+        } catch (e: Exception) {
+            false
+        }
+
+        // Mock Location / Fake GPS detection
+        val isMockLocation = try {
+            @Suppress("DEPRECATION")
+            val setting = Settings.Secure.getString(resolver, Settings.Secure.ALLOW_MOCK_LOCATION)
+            setting != null && setting != "0"
+        } catch (e: Exception) {
+            false
+        }
+
+        // Verification of apps over USB
+        val isVerificationOfAppsOverUsb = try {
+            Settings.Global.getInt(resolver, Settings.Global.PACKAGE_VERIFIER_USER_CONSENT, 0) != 0
+        } catch (e: Exception) {
+            false
+        }
+
         // Device lock / passcode check
         val km = ctx.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
         val isDeviceSecure = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -335,6 +392,10 @@ class AdvancedDeviceInfoPlugin :
             "isJailbroken" to false,
             "isDeveloperMode" to isDeveloperMode,
             "isAdbEnabled" to isAdbEnabled,
+            "isWirelessDebuggingEnabled" to isWirelessDebuggingEnabled,
+            "isStayAwake" to isStayAwake,
+            "isMockLocation" to isMockLocation,
+            "isVerificationOfAppsOverUsb" to isVerificationOfAppsOverUsb,
             "isUsbConnected" to isUsbConnected,
             "isDeviceSecure" to isDeviceSecure,
             "isDebuggerAttached" to isDebuggerAttached

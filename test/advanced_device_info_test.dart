@@ -16,7 +16,16 @@ class MockAdvancedDeviceInfoPlatform
         manufacturer: 'Mock Manufacturer',
         model: 'Mock Model',
         brand: 'Mock Brand',
-        buildInfo: {},
+        buildInfo: {
+          'release': '14',
+          'securityPatch': '2024-05-01',
+          'kernelVersion': 'Linux 5.15.78',
+          'radioVersion': 'g5300g-240115',
+          'bootloader': 'c10-0.6',
+          'board': 'shasta',
+          'supportedAbis': 'arm64-v8a',
+          'uptimeMillis': 86400000,
+        },
         isEmulator: true,
       ));
 
@@ -165,6 +174,14 @@ void main() {
       expect(info.model, 'Mock Model');
       expect(info.brand, 'Mock Brand');
       expect(info.isEmulator, true);
+      expect(info.osVersion, '14');
+      expect(info.securityPatch, '2024-05-01');
+      expect(info.kernelVersion, 'Linux 5.15.78');
+      expect(info.radioVersion, 'g5300g-240115');
+      expect(info.bootloader, 'c10-0.6');
+      expect(info.board, 'shasta');
+      expect(info.supportedAbis, 'arm64-v8a');
+      expect(info.formattedUptime, '1d 0h 0m');
     });
 
     test('getStorageInfo and convenience getters', () async {
@@ -222,6 +239,10 @@ void main() {
       expect(info.isJailbroken, false);
       expect(info.isDeveloperMode, true);
       expect(info.isAdbEnabled, true);
+      expect(info.isWirelessDebuggingEnabled, false);
+      expect(info.isStayAwake, false);
+      expect(info.isMockLocation, false);
+      expect(info.isVerificationOfAppsOverUsb, false);
       expect(info.isUsbConnected, true);
       expect(info.isDeviceSecure, true);
       expect(info.isDebuggerAttached, false);

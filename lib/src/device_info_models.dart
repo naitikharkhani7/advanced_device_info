@@ -62,6 +62,48 @@ class DeviceInfo {
     };
   }
 
+  /// Android security patch level (e.g. "2024-05-01"), or "N/A" on iOS.
+  String get securityPatch => buildInfo['securityPatch']?.toString() ?? 'N/A';
+
+  /// Kernel version string (e.g. Linux 5.15 on Android, Darwin on iOS).
+  String get kernelVersion => buildInfo['kernelVersion']?.toString() ?? 'Unknown';
+
+  /// Radio / Baseband firmware version, or "N/A".
+  String get radioVersion => buildInfo['radioVersion']?.toString() ?? 'N/A';
+
+  /// Bootloader version identifier, or "N/A".
+  String get bootloader => buildInfo['bootloader']?.toString() ?? 'N/A';
+
+  /// Hardware board name, or "N/A".
+  String get board => buildInfo['board']?.toString() ?? 'N/A';
+
+  /// Supported CPU architectures / ABIs (e.g. "arm64-v8a, armeabi-v7a").
+  String get supportedAbis => buildInfo['supportedAbis']?.toString() ?? 'Unknown';
+
+  /// Operating system release or version string.
+  String get osVersion =>
+      buildInfo['release']?.toString() ??
+      buildInfo['systemVersion']?.toString() ??
+      'Unknown';
+
+  /// System uptime formatted into human-readable string (e.g. "2d 4h 15m").
+  String get formattedUptime {
+    int totalSeconds = 0;
+    if (buildInfo.containsKey('uptimeMillis')) {
+      final millis = (buildInfo['uptimeMillis'] as num?)?.toInt() ?? 0;
+      totalSeconds = (millis / 1000).round();
+    } else if (buildInfo.containsKey('uptimeSeconds')) {
+      totalSeconds = (buildInfo['uptimeSeconds'] as num?)?.toInt() ?? 0;
+    }
+    if (totalSeconds <= 0) return 'Just started';
+    final days = totalSeconds ~/ 86400;
+    final hours = (totalSeconds % 86400) ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    if (days > 0) return '${days}d ${hours}h ${minutes}m';
+    if (hours > 0) return '${hours}h ${minutes}m';
+    return '${minutes}m';
+  }
+
   @override
   String toString() => 'DeviceInfo(${toMap()})';
 }
@@ -382,6 +424,18 @@ class SecurityInfo {
   /// Whether USB Debugging (ADB) is enabled (Android).
   final bool isAdbEnabled;
 
+  /// Whether Wireless Debugging (ADB over Wi-Fi) is enabled (Android 11+).
+  final bool isWirelessDebuggingEnabled;
+
+  /// Whether the screen is set to stay on while charging (developer setting).
+  final bool isStayAwake;
+
+  /// Whether mock location / fake GPS simulation is enabled or detected.
+  final bool isMockLocation;
+
+  /// Whether package verification of apps installed over ADB is enabled.
+  final bool isVerificationOfAppsOverUsb;
+
   /// Whether the device is connected to a computer or charger via USB cable.
   final bool isUsbConnected;
 
@@ -396,6 +450,10 @@ class SecurityInfo {
     required this.isJailbroken,
     required this.isDeveloperMode,
     required this.isAdbEnabled,
+    this.isWirelessDebuggingEnabled = false,
+    this.isStayAwake = false,
+    this.isMockLocation = false,
+    this.isVerificationOfAppsOverUsb = false,
     required this.isUsbConnected,
     required this.isDeviceSecure,
     required this.isDebuggerAttached,
@@ -408,6 +466,10 @@ class SecurityInfo {
       isJailbroken: map['isJailbroken'] as bool? ?? false,
       isDeveloperMode: map['isDeveloperMode'] as bool? ?? false,
       isAdbEnabled: map['isAdbEnabled'] as bool? ?? false,
+      isWirelessDebuggingEnabled: map['isWirelessDebuggingEnabled'] as bool? ?? false,
+      isStayAwake: map['isStayAwake'] as bool? ?? false,
+      isMockLocation: map['isMockLocation'] as bool? ?? false,
+      isVerificationOfAppsOverUsb: map['isVerificationOfAppsOverUsb'] as bool? ?? false,
       isUsbConnected: map['isUsbConnected'] as bool? ?? false,
       isDeviceSecure: map['isDeviceSecure'] as bool? ?? false,
       isDebuggerAttached: map['isDebuggerAttached'] as bool? ?? false,
@@ -415,8 +477,9 @@ class SecurityInfo {
   }
 
   /// Returns true if the device environment is potentially untrusted
-  /// (e.g. rooted, jailbroken, or debugging enabled).
-  bool get isCompromised => isRooted || isJailbroken || isDebuggerAttached;
+  /// (e.g. rooted, jailbroken, debugger attached, or fake mock location active).
+  bool get isCompromised =>
+      isRooted || isJailbroken || isDebuggerAttached || isMockLocation;
 
   /// Converts this object to a map.
   Map<String, dynamic> toMap() {
@@ -425,6 +488,10 @@ class SecurityInfo {
       'isJailbroken': isJailbroken,
       'isDeveloperMode': isDeveloperMode,
       'isAdbEnabled': isAdbEnabled,
+      'isWirelessDebuggingEnabled': isWirelessDebuggingEnabled,
+      'isStayAwake': isStayAwake,
+      'isMockLocation': isMockLocation,
+      'isVerificationOfAppsOverUsb': isVerificationOfAppsOverUsb,
       'isUsbConnected': isUsbConnected,
       'isDeviceSecure': isDeviceSecure,
       'isDebuggerAttached': isDebuggerAttached,

@@ -129,7 +129,7 @@ class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
                 ),
                 if (info.deviceInfo.buildInfo.isNotEmpty) ...[
                   const SizedBox(height: 14),
-                  _BuildInfoCard(buildInfo: info.deviceInfo.buildInfo),
+                  _BuildInfoCard(device: info.deviceInfo),
                 ],
               ],
             ),
@@ -275,10 +275,38 @@ class _SecurityOverviewCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _SecurityBadgeRow(
+              label: 'Wireless Debugging (Wi-Fi ADB)',
+              value: security.isWirelessDebuggingEnabled ? 'ACTIVE' : 'DISABLED',
+              isWarning: security.isWirelessDebuggingEnabled,
+              icon: Icons.wifi_tethering_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SecurityBadgeRow(
               label: 'USB Cable Connection',
               value: security.isUsbConnected ? 'CONNECTED' : 'DISCONNECTED',
               isWarning: security.isUsbConnected,
               icon: Icons.usb_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SecurityBadgeRow(
+              label: 'Fake GPS / Mock Location',
+              value: security.isMockLocation ? 'MOCK ACTIVE' : 'CLEAN',
+              isWarning: security.isMockLocation,
+              icon: Icons.location_off_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SecurityBadgeRow(
+              label: 'Stay Awake on Charge',
+              value: security.isStayAwake ? 'ACTIVE' : 'OFF',
+              isWarning: security.isStayAwake,
+              icon: Icons.visibility_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SecurityBadgeRow(
+              label: 'USB App Verification',
+              value: security.isVerificationOfAppsOverUsb ? 'ENFORCED' : 'OFF',
+              isWarning: !security.isVerificationOfAppsOverUsb,
+              icon: Icons.verified_user_rounded,
             ),
             const SizedBox(height: 8),
             _SecurityBadgeRow(
@@ -293,6 +321,13 @@ class _SecurityOverviewCard extends StatelessWidget {
               value: security.isDeviceSecure ? 'CONFIGURED' : 'NOT SET',
               isWarning: !security.isDeviceSecure,
               icon: Icons.lock_outline_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SecurityBadgeRow(
+              label: 'Native Debugger Process',
+              value: security.isDebuggerAttached ? 'ATTACHED' : 'DETACHED',
+              isWarning: security.isDebuggerAttached,
+              icon: Icons.terminal_rounded,
             ),
           ],
         ),
@@ -642,30 +677,76 @@ class _ResourceUsageCard extends StatelessWidget {
   }
 }
 
-/// Expansion card detailing platform-specific hardware/OS build properties.
+/// Card detailing full "About Phone" properties and platform-specific build specifications.
 class _BuildInfoCard extends StatelessWidget {
-  final Map<String, dynamic> buildInfo;
+  final DeviceInfo device;
 
-  const _BuildInfoCard({required this.buildInfo});
+  const _BuildInfoCard({required this.device});
 
   @override
   Widget build(BuildContext context) {
+    final buildInfo = device.buildInfo;
     return Card(
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: false,
-          leading: const Icon(Icons.settings_suggest_rounded, color: Colors.purpleAccent, size: 20),
-          title: const Text(
-            'DETAILED BUILD INFO',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-          ),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.phone_android_rounded, color: Colors.purpleAccent, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'ABOUT PHONE & SYSTEM SPECS',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withAlpha(50),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.purpleAccent, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.timer_outlined, size: 11, color: Colors.purpleAccent),
+                      const SizedBox(width: 4),
+                      Text(
+                        'UPTIME: ${device.formattedUptime}',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purpleAccent),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _BuildInfoRow(label: 'OS Release / Version', value: device.osVersion, icon: Icons.terminal_rounded),
+            _BuildInfoRow(label: 'Security Patch Level', value: device.securityPatch, icon: Icons.verified_user_outlined),
+            _BuildInfoRow(label: 'Kernel Version', value: device.kernelVersion, icon: Icons.memory_rounded),
+            _BuildInfoRow(label: 'Supported Architectures', value: device.supportedAbis, icon: Icons.developer_board_rounded),
+            _BuildInfoRow(label: 'Baseband / Radio', value: device.radioVersion, icon: Icons.cell_tower_rounded),
+            _BuildInfoRow(label: 'Bootloader', value: device.bootloader, icon: Icons.power_settings_new_rounded),
+            _BuildInfoRow(label: 'Hardware & Board', value: '${device.buildInfo['hardware'] ?? device.manufacturer} (${device.board})', icon: Icons.precision_manufacturing_rounded),
+            _BuildInfoRow(label: 'Display / Build ID', value: '${device.buildInfo['display'] ?? device.buildInfo['id'] ?? 'N/A'}', icon: Icons.fingerprint_rounded),
+            if (device.buildInfo.containsKey('thermalState'))
+              _BuildInfoRow(label: 'Thermal State', value: device.buildInfo['thermalState'].toString().toUpperCase(), icon: Icons.thermostat_rounded),
+            const SizedBox(height: 8),
             const Divider(color: Colors.white12),
+            const SizedBox(height: 8),
+            const Text(
+              'ALL RAW BUILD PROPERTIES',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 0.8),
+            ),
+            const SizedBox(height: 8),
             ...buildInfo.entries.map(
               (entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 3),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -673,14 +754,14 @@ class _BuildInfoCard extends StatelessWidget {
                       flex: 2,
                       child: Text(
                         entry.key,
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white54, fontSize: 12),
+                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white54, fontSize: 11),
                       ),
                     ),
                     Expanded(
                       flex: 3,
                       child: Text(
                         entry.value?.toString() ?? 'N/A',
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                        style: const TextStyle(color: Colors.white, fontSize: 11),
                       ),
                     ),
                   ],
@@ -689,6 +770,47 @@ class _BuildInfoCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BuildInfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _BuildInfoRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 15, color: Colors.white54),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.white70, fontSize: 12),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 12),
+            ),
+          ),
+        ],
       ),
     );
   }
