@@ -125,4 +125,52 @@ class MethodChannelAdvancedDeviceInfo extends AdvancedDeviceInfoPlatform {
     }
     return SystemInfo.fromMap(map);
   }
+
+  @override
+  Future<DrmInfo> getDrmInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getDrmInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getDrmInfo returned null',
+      );
+    }
+    return DrmInfo.fromMap(map);
+  }
+
+  @override
+  Future<BiometricInfo> getBiometricInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getBiometricInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getBiometricInfo returned null',
+      );
+    }
+    return BiometricInfo.fromMap(map);
+  }
+
+  @override
+  Future<SensorsInfo> getSensorsInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getSensorsInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getSensorsInfo returned null',
+      );
+    }
+    return SensorsInfo.fromMap(map);
+  }
+
+  @override
+  Future<LiveHardwareInfo> getLiveHardwareInfo() async {
+    final map = await methodChannel.invokeMapMethod<dynamic, dynamic>('getLiveHardwareInfo');
+    if (map == null) {
+      throw PlatformException(
+        code: 'NULL_RESPONSE',
+        message: 'getLiveHardwareInfo returned null',
+      );
+    }
+    return LiveHardwareInfo.fromMap(map);
+  }
 }

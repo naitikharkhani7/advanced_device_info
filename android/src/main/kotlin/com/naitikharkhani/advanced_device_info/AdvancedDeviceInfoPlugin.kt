@@ -21,8 +21,16 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import android.hardware.Sensor
+import android.hardware.SensorManager
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
+import android.media.MediaDrm
+import android.net.wifi.WifiManager
+import android.telephony.TelephonyManager
 import java.io.File
 import java.net.NetworkInterface
+import java.util.UUID
 
 /** AdvancedDeviceInfoPlugin */
 class AdvancedDeviceInfoPlugin :
@@ -73,6 +81,18 @@ class AdvancedDeviceInfoPlugin :
                 }
                 "getSystemInfo" -> {
                     result.success(getSystemInfoMap())
+                }
+                "getDrmInfo" -> {
+                    result.success(getDrmInfoMap())
+                }
+                "getBiometricInfo" -> {
+                    result.success(getBiometricInfoMap())
+                }
+                "getSensorsInfo" -> {
+                    result.success(getSensorsInfoMap())
+                }
+                "getLiveHardwareInfo" -> {
+                    result.success(getLiveHardwareInfoMap())
                 }
                 else -> {
                     result.notImplemented()
@@ -503,6 +523,154 @@ class AdvancedDeviceInfoPlugin :
         )
     }
 
+    private fun getDrmInfoMap(): Map<String, Any?> {
+        var securityLevel = "N/A"
+        var vendor = "Unknown"
+        var version = "Unknown"
+        var systemId = -1
+
+        try {
+            val widevineUuid = UUID(-0x121074568629b532L, -0x5c37d8232ae2de13L)
+            if (MediaDrm.isCryptoSchemeSupported(widevineUuid)) {
+                val mediaDrm = MediaDrm(widevineUuid)
+                try {
+                    vendor = mediaDrm.getPropertyString(MediaDrm.PROPERTY_VENDOR)
+                    version = mediaDrm.getPropertyString(MediaDrm.PROPERTY_VERSION)
+                    securityLevel = mediaDrm.getPropertyString("securityLevel")
+                    systemId = mediaDrm.getPropertyString("systemId")?.toIntOrNull() ?: -1
+                } catch (e: Exception) {
+                    securityLevel = "L3"
+                } finally {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        mediaDrm.close()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        mediaDrm.release()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // DRM query not supported
+        }
+
+        return mapOf(
+            "widevineSecurityLevel" to securityLevel,
+            "widevineVendor" to vendor,
+            "widevineVersion" to version,
+            "systemId" to systemId
+        )
+    }
+
+    private fun getBiometricInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+        val types = mutableListOf<String>()
+
+        val pm = ctx.packageManager
+        val hasFingerprint = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_FINGERPRINT)
+        val hasFace = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_FACE)
+        } else false
+        val hasIris = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_IRIS)
+        } else false
+
+        if (hasFingerprint) types.add("fingerprint")
+        if (hasFace) types.add("face")
+        if (hasIris) types.add("iris")
+
+        val km = ctx.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+        val isEnrolled = km?.isDeviceSecure ?: false
+
+        return mapOf(
+            "hasBiometrics" to types.isNotEmpty(),
+            "isEnrolled" to isEnrolled,
+            "supportedTypes" to types
+        )
+    }
+
+    private fun getSensorsInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+        val sm = ctx.getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return emptyMap()
+
+        val hasAccelerometer = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null
+        val hasGyroscope = sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null
+        val hasBarometer = sm.getDefaultSensor(Sensor.TYPE_PRESSURE) != null
+        val hasMagnetometer = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null
+        val hasProximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY) != null
+        val hasStepCounter = sm.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null
+        val hasLight = sm.getDefaultSensor(Sensor.TYPE_LIGHT) != null
+
+        val allSensors = sm.getSensorList(Sensor.TYPE_ALL).map { it.name }
+
+        return mapOf(
+            "hasAccelerometer" to hasAccelerometer,
+            "hasGyroscope" to hasGyroscope,
+            "hasBarometer" to hasBarometer,
+            "hasMagnetometer" to hasMagnetometer,
+            "hasProximity" to hasProximity,
+            "hasStepCounter" to hasStepCounter,
+            "hasLight" to hasLight,
+            "totalSensorCount" to allSensors.size,
+            "sensorNames" to allSensors.take(25)
+        )
+    }
+
+    private fun getLiveHardwareInfoMap(): Map<String, Any?> {
+        val ctx = context ?: return emptyMap()
+
+        val pm = ctx.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val isScreenOn = pm?.isInteractive ?: true
+
+        val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        val isWifiEnabled = try {
+            wm?.isWifiEnabled ?: false
+        } catch (e: Exception) {
+            false
+        }
+
+        val am = ctx.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        val isCallActive = (am?.mode == AudioManager.MODE_IN_CALL || am?.mode == AudioManager.MODE_IN_COMMUNICATION)
+
+        val isHeadphonesConnected = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val devices = am?.getDevices(AudioManager.GET_DEVICES_OUTPUTS) ?: emptyArray()
+                devices.any {
+                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
+                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
+                    it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                    it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                (am?.isWiredHeadsetOn == true || am?.isBluetoothA2dpOn == true)
+            }
+        } catch (e: Exception) {
+            false
+        }
+
+        val tm = ctx.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+        val simSlotCount = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                tm?.activeModemCount ?: 1
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                @Suppress("DEPRECATION")
+                tm?.phoneCount ?: 1
+            } else {
+                1
+            }
+        } catch (e: Exception) {
+            1
+        }
+
+        return mapOf(
+            "isScreenOn" to isScreenOn,
+            "isWifiEnabled" to isWifiEnabled,
+            "isCallActive" to isCallActive,
+            "isHeadphonesConnected" to isHeadphonesConnected,
+            "simSlotCount" to simSlotCount
+        )
+    }
+
     private fun getSystemInfoMap(): Map<String, Any?> {
         return mapOf(
             "deviceInfo" to getDeviceInfoMap(),
@@ -512,7 +680,11 @@ class AdvancedDeviceInfoPlugin :
             "screenInfo" to getScreenInfoMap(),
             "batteryInfo" to getBatteryInfoMap(),
             "securityInfo" to getSecurityInfoMap(),
-            "networkInfo" to getNetworkInfoMap()
+            "networkInfo" to getNetworkInfoMap(),
+            "drmInfo" to getDrmInfoMap(),
+            "biometricInfo" to getBiometricInfoMap(),
+            "sensorsInfo" to getSensorsInfoMap(),
+            "liveHardwareInfo" to getLiveHardwareInfoMap()
         )
     }
 }

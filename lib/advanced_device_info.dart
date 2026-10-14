@@ -53,4 +53,24 @@ class AdvancedDeviceInfo {
   static Future<SystemInfo> getSystemInfo() {
     return AdvancedDeviceInfoPlatform.instance.getSystemInfo();
   }
+
+  /// Retrieves Digital Rights Management (DRM) and Widevine security levels.
+  static Future<DrmInfo> getDrmInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getDrmInfo();
+  }
+
+  /// Retrieves biometric hardware capabilities and enrollment state.
+  static Future<BiometricInfo> getBiometricInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getBiometricInfo();
+  }
+
+  /// Retrieves list and presence of onboard hardware sensors.
+  static Future<SensorsInfo> getSensorsInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getSensorsInfo();
+  }
+
+  /// Retrieves live peripheral states (screen interactive, wifi, in-call, headphones, SIM slots).
+  static Future<LiveHardwareInfo> getLiveHardwareInfo() {
+    return AdvancedDeviceInfoPlatform.instance.getLiveHardwareInfo();
+  }
 }

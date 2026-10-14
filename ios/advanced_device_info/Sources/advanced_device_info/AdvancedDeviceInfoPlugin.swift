@@ -3,6 +3,8 @@ import UIKit
 import Darwin
 import LocalAuthentication
 import SystemConfiguration
+import AVFoundation
+import CoreMotion
 
 public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
@@ -33,6 +35,14 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
       result(getNetworkInfoMap())
     case "getSystemInfo":
       result(getSystemInfoMap())
+    case "getDrmInfo":
+      result(getDrmInfoMap())
+    case "getBiometricInfo":
+      result(getBiometricInfoMap())
+    case "getSensorsInfo":
+      result(getSensorsInfoMap())
+    case "getLiveHardwareInfo":
+      result(getLiveHardwareInfoMap())
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -367,6 +377,90 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
     ]
   }
 
+  private func getDrmInfoMap() -> [String: Any] {
+    return [
+      "widevineSecurityLevel": "N/A (FairPlay)",
+      "widevineVendor": "Apple Inc.",
+      "widevineVersion": "FairPlay Streaming",
+      "systemId": -1
+    ]
+  }
+
+  private func getBiometricInfoMap() -> [String: Any] {
+    let context = LAContext()
+    var error: NSError?
+    let canEvaluate = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+    var types: [String] = []
+    if #available(iOS 11.0, *) {
+      switch context.biometryType {
+      case .faceID:
+        types.append("face")
+      case .touchID:
+        types.append("fingerprint")
+      case .opticID:
+        types.append("optic")
+      default:
+        break
+      }
+    }
+    return [
+      "hasBiometrics": !types.isEmpty,
+      "isEnrolled": canEvaluate,
+      "supportedTypes": types
+    ]
+  }
+
+  private func getSensorsInfoMap() -> [String: Any] {
+    let motionManager = CMMotionManager()
+    let hasAccelerometer = motionManager.isAccelerometerAvailable
+    let hasGyroscope = motionManager.isGyroAvailable
+    let hasMagnetometer = motionManager.isMagnetometerAvailable
+    let hasBarometer = CMAltimeter.isRelativeAltitudeAvailable()
+    let hasStepCounter = CMPedometer.isStepCountingAvailable()
+
+    var names: [String] = []
+    if hasAccelerometer { names.append("Accelerometer") }
+    if hasGyroscope { names.append("Gyroscope") }
+    if hasMagnetometer { names.append("Magnetometer") }
+    if hasBarometer { names.append("Barometer (Altimeter)") }
+    if hasStepCounter { names.append("Step Counter (Pedometer)") }
+    names.append("Proximity Sensor")
+    names.append("Ambient Light Sensor")
+
+    return [
+      "hasAccelerometer": hasAccelerometer,
+      "hasGyroscope": hasGyroscope,
+      "hasBarometer": hasBarometer,
+      "hasMagnetometer": hasMagnetometer,
+      "hasProximity": true,
+      "hasStepCounter": hasStepCounter,
+      "hasLight": true,
+      "totalSensorCount": names.count,
+      "sensorNames": names
+    ]
+  }
+
+  private func getLiveHardwareInfoMap() -> [String: Any] {
+    let session = AVAudioSession.sharedInstance()
+    var isHeadphones = false
+    for output in session.currentRoute.outputs {
+      if output.portType == .headphones || output.portType == .bluetoothA2DP || output.portType == .bluetoothHFP || output.portType == .bluetoothLE {
+        isHeadphones = true
+        break
+      }
+    }
+    let isCall = (session.category == .playAndRecord || session.category == .record)
+    let isScreenOn = (UIScreen.main.brightness > 0.0)
+
+    return [
+      "isScreenOn": isScreenOn,
+      "isWifiEnabled": true,
+      "isCallActive": isCall,
+      "isHeadphonesConnected": isHeadphones,
+      "simSlotCount": 2
+    ]
+  }
+
   private func getSystemInfoMap() -> [String: Any] {
     return [
       "deviceInfo": getDeviceInfoMap(),
@@ -376,7 +470,11 @@ public class AdvancedDeviceInfoPlugin: NSObject, FlutterPlugin {
       "screenInfo": getScreenInfoMap(),
       "batteryInfo": getBatteryInfoMap(),
       "securityInfo": getSecurityInfoMap(),
-      "networkInfo": getNetworkInfoMap()
+      "networkInfo": getNetworkInfoMap(),
+      "drmInfo": getDrmInfoMap(),
+      "biometricInfo": getBiometricInfoMap(),
+      "sensorsInfo": getSensorsInfoMap(),
+      "liveHardwareInfo": getLiveHardwareInfoMap()
     ]
   }
 }

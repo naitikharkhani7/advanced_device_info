@@ -100,7 +100,13 @@ class _DeviceInfoDashboardState extends State<DeviceInfoDashboard> {
               children: [
                 _HeaderBanner(device: info.deviceInfo),
                 const SizedBox(height: 14),
+                _LiveHardwareCard(live: info.liveHardwareInfo),
+                const SizedBox(height: 14),
                 _SecurityOverviewCard(security: info.securityInfo),
+                const SizedBox(height: 14),
+                _DrmAndBiometricCard(drm: info.drmInfo, biometric: info.biometricInfo),
+                const SizedBox(height: 14),
+                _SensorsCard(sensors: info.sensorsInfo),
                 const SizedBox(height: 14),
                 _BatteryOverviewCard(battery: info.batteryInfo),
                 const SizedBox(height: 14),
@@ -207,6 +213,110 @@ class _HeaderBanner extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Live hardware signals: Screen, Wi-Fi, In-call, Headphones, and SIM slots.
+class _LiveHardwareCard extends StatelessWidget {
+  final LiveHardwareInfo live;
+
+  const _LiveHardwareCard({required this.live});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.sensors_rounded, color: Colors.cyanAccent, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'LIVE HARDWARE & PERIPHERALS',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _LiveSignalRow(
+              icon: Icons.phone_android_rounded,
+              label: 'Screen Display State',
+              value: live.isScreenOn ? 'SCREEN ON (INTERACTIVE)' : 'SCREEN OFF',
+              isHighlighted: live.isScreenOn,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.wifi_rounded,
+              label: 'Wi-Fi Radio Adapter',
+              value: live.isWifiEnabled ? 'ENABLED' : 'DISABLED',
+              isHighlighted: live.isWifiEnabled,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.call_rounded,
+              label: 'Voice / VoIP Call Status',
+              value: live.isCallActive ? 'CALL IN PROGRESS' : 'IDLE',
+              isHighlighted: live.isCallActive,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.headphones_rounded,
+              label: 'Headphones / Audio Route',
+              value: live.isHeadphonesConnected ? 'CONNECTED' : 'DISCONNECTED',
+              isHighlighted: live.isHeadphonesConnected,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.sim_card_rounded,
+              label: 'Cellular SIM Slots',
+              value: '${live.simSlotCount} ${live.simSlotCount > 1 ? "Slots (Dual SIM)" : "Slot (Single SIM)"}',
+              isHighlighted: false,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveSignalRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isHighlighted;
+
+  const _LiveSignalRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.isHighlighted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.white54),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Colors.white70),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: isHighlighted ? Colors.cyanAccent : Colors.white60,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -370,6 +480,187 @@ class _SecurityBadgeRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// DRM security and biometric hardware inspection card.
+class _DrmAndBiometricCard extends StatelessWidget {
+  final DrmInfo drm;
+  final BiometricInfo biometric;
+
+  const _DrmAndBiometricCard({required this.drm, required this.biometric});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.video_library_rounded, color: Colors.pinkAccent, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'DRM & BIOMETRIC CAPABILITIES',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: drm.isHdCapable ? Colors.pink.withAlpha(50) : Colors.white10,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: drm.isHdCapable ? Colors.pinkAccent : Colors.white24,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    'WIDEVINE ${drm.widevineSecurityLevel}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: drm.isHdCapable ? Colors.pinkAccent : Colors.white70,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _LiveSignalRow(
+              icon: Icons.hd_rounded,
+              label: 'HD / 4K Streaming Certification',
+              value: drm.isHdCapable ? 'SUPPORTED (L1)' : 'STANDARD DEF (${drm.widevineSecurityLevel})',
+              isHighlighted: drm.isHdCapable,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.fingerprint_rounded,
+              label: 'Biometric Hardware',
+              value: biometric.hasBiometrics
+                  ? 'AVAILABLE (${biometric.supportedTypes.join(", ").toUpperCase()})'
+                  : 'NONE',
+              isHighlighted: biometric.hasBiometrics,
+            ),
+            const SizedBox(height: 8),
+            _LiveSignalRow(
+              icon: Icons.lock_person_rounded,
+              label: 'Biometrics Enrolled by User',
+              value: biometric.isEnrolled ? 'ENROLLED' : 'NOT ENROLLED',
+              isHighlighted: biometric.isEnrolled,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Hardware sensors present on the device.
+class _SensorsCard extends StatelessWidget {
+  final SensorsInfo sensors;
+
+  const _SensorsCard({required this.sensors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.explore_rounded, color: Colors.amberAccent, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'HARDWARE SENSORS',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withAlpha(40),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amberAccent, width: 1),
+                  ),
+                  child: Text(
+                    '${sensors.totalSensorCount} SENSORS FOUND',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amberAccent),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _SensorChip(label: 'Accelerometer', isPresent: sensors.hasAccelerometer),
+                _SensorChip(label: 'Gyroscope', isPresent: sensors.hasGyroscope),
+                _SensorChip(label: 'Magnetometer (Compass)', isPresent: sensors.hasMagnetometer),
+                _SensorChip(label: 'Barometer', isPresent: sensors.hasBarometer),
+                _SensorChip(label: 'Proximity', isPresent: sensors.hasProximity),
+                _SensorChip(label: 'Step Counter', isPresent: sensors.hasStepCounter),
+                _SensorChip(label: 'Light Sensor', isPresent: sensors.hasLight),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SensorChip extends StatelessWidget {
+  final String label;
+  final bool isPresent;
+
+  const _SensorChip({required this.label, required this.isPresent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isPresent ? const Color(0xFF1E293B) : Colors.white.withAlpha(5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isPresent ? Colors.amberAccent.withAlpha(120) : Colors.white10,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isPresent ? Icons.check_circle_rounded : Icons.cancel_outlined,
+            size: 13,
+            color: isPresent ? Colors.amberAccent : Colors.white30,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isPresent ? FontWeight.w600 : FontWeight.normal,
+              color: isPresent ? Colors.white : Colors.white38,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

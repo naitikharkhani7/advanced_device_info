@@ -542,6 +542,205 @@ class NetworkInfo {
   String toString() => 'NetworkInfo(${toMap()})';
 }
 
+/// Digital Rights Management (DRM) and Widevine security info.
+/// Crucial for video streaming apps (e.g. Netflix, Disney+, Prime Video).
+class DrmInfo {
+  /// Widevine security level: "L1" (Hardware Secure), "L2", "L3" (Software DRM), or "N/A".
+  final String widevineSecurityLevel;
+
+  /// Widevine library vendor (e.g. "Google").
+  final String widevineVendor;
+
+  /// Widevine library version string.
+  final String widevineVersion;
+
+  /// System-specific crypto device ID.
+  final int systemId;
+
+  const DrmInfo({
+    required this.widevineSecurityLevel,
+    required this.widevineVendor,
+    required this.widevineVersion,
+    required this.systemId,
+  });
+
+  /// True if the device supports HD/4K hardware decryption (Widevine L1).
+  bool get isHdCapable => widevineSecurityLevel.toUpperCase() == 'L1';
+
+  factory DrmInfo.fromMap(Map<dynamic, dynamic> map) {
+    return DrmInfo(
+      widevineSecurityLevel: map['widevineSecurityLevel']?.toString() ?? 'N/A',
+      widevineVendor: map['widevineVendor']?.toString() ?? 'Unknown',
+      widevineVersion: map['widevineVersion']?.toString() ?? 'Unknown',
+      systemId: (map['systemId'] as num?)?.toInt() ?? -1,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'widevineSecurityLevel': widevineSecurityLevel,
+      'widevineVendor': widevineVendor,
+      'widevineVersion': widevineVersion,
+      'systemId': systemId,
+      'isHdCapable': isHdCapable,
+    };
+  }
+
+  @override
+  String toString() => 'DrmInfo(${toMap()})';
+}
+
+/// Biometric hardware authentication capabilities.
+class BiometricInfo {
+  /// Whether biometric hardware exists on the device.
+  final bool hasBiometrics;
+
+  /// Whether biometric authentication (PIN/fingerprint/face) is enrolled.
+  final bool isEnrolled;
+
+  /// Supported biometric hardware modalities (e.g. ["fingerprint", "face"]).
+  final List<String> supportedTypes;
+
+  const BiometricInfo({
+    required this.hasBiometrics,
+    required this.isEnrolled,
+    required this.supportedTypes,
+  });
+
+  bool get hasFingerprint => supportedTypes.contains('fingerprint');
+  bool get hasFaceId => supportedTypes.contains('face');
+
+  factory BiometricInfo.fromMap(Map<dynamic, dynamic> map) {
+    return BiometricInfo(
+      hasBiometrics: map['hasBiometrics'] as bool? ?? false,
+      isEnrolled: map['isEnrolled'] as bool? ?? false,
+      supportedTypes: (map['supportedTypes'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'hasBiometrics': hasBiometrics,
+      'isEnrolled': isEnrolled,
+      'supportedTypes': supportedTypes,
+    };
+  }
+
+  @override
+  String toString() => 'BiometricInfo(${toMap()})';
+}
+
+/// Built-in hardware motion, environmental, and position sensors.
+class SensorsInfo {
+  final bool hasAccelerometer;
+  final bool hasGyroscope;
+  final bool hasBarometer;
+  final bool hasMagnetometer;
+  final bool hasProximity;
+  final bool hasStepCounter;
+  final bool hasLight;
+  final int totalSensorCount;
+  final List<String> sensorNames;
+
+  const SensorsInfo({
+    required this.hasAccelerometer,
+    required this.hasGyroscope,
+    required this.hasBarometer,
+    required this.hasMagnetometer,
+    required this.hasProximity,
+    required this.hasStepCounter,
+    required this.hasLight,
+    required this.totalSensorCount,
+    required this.sensorNames,
+  });
+
+  factory SensorsInfo.fromMap(Map<dynamic, dynamic> map) {
+    return SensorsInfo(
+      hasAccelerometer: map['hasAccelerometer'] as bool? ?? false,
+      hasGyroscope: map['hasGyroscope'] as bool? ?? false,
+      hasBarometer: map['hasBarometer'] as bool? ?? false,
+      hasMagnetometer: map['hasMagnetometer'] as bool? ?? false,
+      hasProximity: map['hasProximity'] as bool? ?? false,
+      hasStepCounter: map['hasStepCounter'] as bool? ?? false,
+      hasLight: map['hasLight'] as bool? ?? false,
+      totalSensorCount: (map['totalSensorCount'] as num?)?.toInt() ?? 0,
+      sensorNames: (map['sensorNames'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'hasAccelerometer': hasAccelerometer,
+      'hasGyroscope': hasGyroscope,
+      'hasBarometer': hasBarometer,
+      'hasMagnetometer': hasMagnetometer,
+      'hasProximity': hasProximity,
+      'hasStepCounter': hasStepCounter,
+      'hasLight': hasLight,
+      'totalSensorCount': totalSensorCount,
+      'sensorNames': sensorNames,
+    };
+  }
+
+  @override
+  String toString() => 'SensorsInfo(${toMap()})';
+}
+
+/// Live hardware signals and peripheral states.
+class LiveHardwareInfo {
+  /// Whether the screen is on and interactive.
+  final bool isScreenOn;
+
+  /// Whether the Wi-Fi adapter is toggled on.
+  final bool isWifiEnabled;
+
+  /// Whether a phone call or VoIP audio communication session is in progress.
+  final bool isCallActive;
+
+  /// Whether wired headphones or a Bluetooth audio device are currently connected.
+  final bool isHeadphonesConnected;
+
+  /// Number of active SIM / modem slots available (e.g. 1 for Single SIM, 2 for Dual SIM).
+  final int simSlotCount;
+
+  const LiveHardwareInfo({
+    required this.isScreenOn,
+    required this.isWifiEnabled,
+    required this.isCallActive,
+    required this.isHeadphonesConnected,
+    required this.simSlotCount,
+  });
+
+  factory LiveHardwareInfo.fromMap(Map<dynamic, dynamic> map) {
+    return LiveHardwareInfo(
+      isScreenOn: map['isScreenOn'] as bool? ?? true,
+      isWifiEnabled: map['isWifiEnabled'] as bool? ?? false,
+      isCallActive: map['isCallActive'] as bool? ?? false,
+      isHeadphonesConnected: map['isHeadphonesConnected'] as bool? ?? false,
+      simSlotCount: (map['simSlotCount'] as num?)?.toInt() ?? 1,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'isScreenOn': isScreenOn,
+      'isWifiEnabled': isWifiEnabled,
+      'isCallActive': isCallActive,
+      'isHeadphonesConnected': isHeadphonesConnected,
+      'simSlotCount': simSlotCount,
+    };
+  }
+
+  @override
+  String toString() => 'LiveHardwareInfo(${toMap()})';
+}
+
 /// Aggregated system-wide information containing all hardware and security metrics.
 class SystemInfo {
   /// General device metadata.
@@ -568,6 +767,18 @@ class SystemInfo {
   /// Network and VPN connectivity details.
   final NetworkInfo networkInfo;
 
+  /// Digital Rights Management (DRM) and Widevine level.
+  final DrmInfo drmInfo;
+
+  /// Biometric hardware authentication capabilities.
+  final BiometricInfo biometricInfo;
+
+  /// Built-in hardware sensors and count.
+  final SensorsInfo sensorsInfo;
+
+  /// Live hardware states (screen interactive, wifi, call, headphones, SIM slots).
+  final LiveHardwareInfo liveHardwareInfo;
+
   const SystemInfo({
     required this.deviceInfo,
     required this.storageInfo,
@@ -577,6 +788,35 @@ class SystemInfo {
     required this.batteryInfo,
     required this.securityInfo,
     required this.networkInfo,
+    this.drmInfo = const DrmInfo(
+      widevineSecurityLevel: 'N/A',
+      widevineVendor: 'Unknown',
+      widevineVersion: 'Unknown',
+      systemId: -1,
+    ),
+    this.biometricInfo = const BiometricInfo(
+      hasBiometrics: false,
+      isEnrolled: false,
+      supportedTypes: [],
+    ),
+    this.sensorsInfo = const SensorsInfo(
+      hasAccelerometer: false,
+      hasGyroscope: false,
+      hasBarometer: false,
+      hasMagnetometer: false,
+      hasProximity: false,
+      hasStepCounter: false,
+      hasLight: false,
+      totalSensorCount: 0,
+      sensorNames: [],
+    ),
+    this.liveHardwareInfo = const LiveHardwareInfo(
+      isScreenOn: true,
+      isWifiEnabled: false,
+      isCallActive: false,
+      isHeadphonesConnected: false,
+      simSlotCount: 1,
+    ),
   });
 
   /// Creates a [SystemInfo] from a nested map.
@@ -590,6 +830,10 @@ class SystemInfo {
       batteryInfo: BatteryInfo.fromMap(map['batteryInfo'] as Map? ?? const {}),
       securityInfo: SecurityInfo.fromMap(map['securityInfo'] as Map? ?? const {}),
       networkInfo: NetworkInfo.fromMap(map['networkInfo'] as Map? ?? const {}),
+      drmInfo: DrmInfo.fromMap(map['drmInfo'] as Map? ?? const {}),
+      biometricInfo: BiometricInfo.fromMap(map['biometricInfo'] as Map? ?? const {}),
+      sensorsInfo: SensorsInfo.fromMap(map['sensorsInfo'] as Map? ?? const {}),
+      liveHardwareInfo: LiveHardwareInfo.fromMap(map['liveHardwareInfo'] as Map? ?? const {}),
     );
   }
 
@@ -604,6 +848,10 @@ class SystemInfo {
       'batteryInfo': batteryInfo.toMap(),
       'securityInfo': securityInfo.toMap(),
       'networkInfo': networkInfo.toMap(),
+      'drmInfo': drmInfo.toMap(),
+      'biometricInfo': biometricInfo.toMap(),
+      'sensorsInfo': sensorsInfo.toMap(),
+      'liveHardwareInfo': liveHardwareInfo.toMap(),
     };
   }
 

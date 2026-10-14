@@ -89,6 +89,43 @@ class MockAdvancedDeviceInfoPlatform
       ));
 
   @override
+  Future<DrmInfo> getDrmInfo() => Future.value(const DrmInfo(
+        widevineSecurityLevel: 'L1',
+        widevineVendor: 'Google',
+        widevineVersion: '16.0.0',
+        systemId: 4242,
+      ));
+
+  @override
+  Future<BiometricInfo> getBiometricInfo() => Future.value(const BiometricInfo(
+        hasBiometrics: true,
+        isEnrolled: true,
+        supportedTypes: ['fingerprint', 'face'],
+      ));
+
+  @override
+  Future<SensorsInfo> getSensorsInfo() => Future.value(const SensorsInfo(
+        hasAccelerometer: true,
+        hasGyroscope: true,
+        hasBarometer: false,
+        hasMagnetometer: true,
+        hasProximity: true,
+        hasStepCounter: true,
+        hasLight: true,
+        totalSensorCount: 15,
+        sensorNames: ['Accelerometer', 'Gyroscope', 'Magnetometer'],
+      ));
+
+  @override
+  Future<LiveHardwareInfo> getLiveHardwareInfo() => Future.value(const LiveHardwareInfo(
+        isScreenOn: true,
+        isWifiEnabled: true,
+        isCallActive: false,
+        isHeadphonesConnected: true,
+        simSlotCount: 2,
+      ));
+
+  @override
   Future<SystemInfo> getSystemInfo() => Future.value(const SystemInfo(
         deviceInfo: DeviceInfo(
           deviceName: 'Mock Phone',
@@ -254,6 +291,37 @@ void main() {
       expect(info.isConnected, true);
       expect(info.connectionType, 'wifi');
       expect(info.isVpnActive, false);
+    });
+
+    test('getDrmInfo', () async {
+      final info = await AdvancedDeviceInfo.getDrmInfo();
+      expect(info.widevineSecurityLevel, 'L1');
+      expect(info.isHdCapable, true);
+      expect(info.widevineVendor, 'Google');
+    });
+
+    test('getBiometricInfo', () async {
+      final info = await AdvancedDeviceInfo.getBiometricInfo();
+      expect(info.hasBiometrics, true);
+      expect(info.hasFingerprint, true);
+      expect(info.hasFaceId, true);
+    });
+
+    test('getSensorsInfo', () async {
+      final info = await AdvancedDeviceInfo.getSensorsInfo();
+      expect(info.hasAccelerometer, true);
+      expect(info.hasGyroscope, true);
+      expect(info.hasBarometer, false);
+      expect(info.totalSensorCount, 15);
+    });
+
+    test('getLiveHardwareInfo', () async {
+      final info = await AdvancedDeviceInfo.getLiveHardwareInfo();
+      expect(info.isScreenOn, true);
+      expect(info.isWifiEnabled, true);
+      expect(info.isCallActive, false);
+      expect(info.isHeadphonesConnected, true);
+      expect(info.simSlotCount, 2);
     });
 
     test('getSystemInfo', () async {

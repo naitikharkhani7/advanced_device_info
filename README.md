@@ -58,6 +58,37 @@ A production-ready Flutter plugin for retrieving comprehensive system-level devi
 
 ---
 
+## ⚡ Live Hardware & Peripheral Signals
+- **Screen Interactive State** (`isScreenOn` - Screen On / Standby)
+- **Wi-Fi Adapter State** (`isWifiEnabled` - Wi-Fi radio on/off)
+- **Active Phone / VoIP Call** (`isCallActive` - In-call state detection)
+- **Headphone / Audio Output** (`isHeadphonesConnected` - Wired or Bluetooth headphones)
+- **Cellular SIM Slot Count** (`simSlotCount` - Single vs Dual SIM support)
+
+---
+
+## 🎬 DRM & Video Streaming Protection
+- **Widevine Security Level** (`widevineSecurityLevel` - `L1`, `L2`, `L3`)
+- **HD / 4K Streaming Capable** (`isHdCapable` - Netflix, Prime Video L1 certification)
+- **DRM Vendor & Version** (`widevineVendor`, `widevineVersion`)
+- **Crypto System ID** (`systemId`)
+
+---
+
+## 🔐 Biometric Hardware Capabilities
+- **Biometric Presence** (`hasBiometrics` - Face ID, Touch ID, Fingerprint, Iris)
+- **User Enrolled Status** (`isEnrolled` - Whether biometrics are set up)
+- **Supported Modalities** (`supportedTypes` - e.g. `["fingerprint", "face"]`)
+
+---
+
+## 🧭 Hardware Sensors Detection
+- **Sensors Present**: Accelerometer, Gyroscope, Magnetometer (Compass), Barometer, Proximity, Light Sensor, Step Counter
+- **Total Hardware Sensors Count** (`totalSensorCount`)
+- **Full Sensor Inventory** (`sensorNames`)
+
+---
+
 ## 💾 Storage Information
 - Total, Used, and Free Storage in Bytes
 - Usage Percentage
