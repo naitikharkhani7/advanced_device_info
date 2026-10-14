@@ -1,13 +1,13 @@
 name: advanced_device_info
-description: "A Flutter plugin for comprehensive Android and iOS device information."
+description: "Advanced device, hardware, security, anti-fraud, thermal, DRM, biometrics, sensors, and live system information for Flutter on Android & iOS."
 version: 0.0.2
 homepage: https://github.com/naitikharkhani7/advanced_device_info
 repository: https://github.com/naitikharkhani7/advanced_device_info
 topics:
   - device-info
-  - hardware
   - security
-  - battery
+  - anti-fraud
+  - hardware
   - system-info
 
 environment:
