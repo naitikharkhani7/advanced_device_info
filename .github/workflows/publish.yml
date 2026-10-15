@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - publish_pub_dev
-      - main
+      
   workflow_dispatch:
     inputs:
       custom_version:
