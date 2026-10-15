@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - publish_pub_dev
-      
   workflow_dispatch:
     inputs:
       custom_version:
@@ -107,4 +106,5 @@ jobs:
         continue-on-error: true
 
       - name: Publish to pub.dev
-        run: flutter pub publish --force
+        timeout-minutes: 5
+        run: dart pub publish --force
