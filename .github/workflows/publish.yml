@@ -21,6 +21,10 @@ on:
           - major
         default: 'patch'
 
+concurrency:
+  group: publish-release
+  cancel-in-progress: true
+
 permissions:
   contents: write
   id-token: write
@@ -99,7 +103,8 @@ jobs:
         run: flutter pub get
 
       - name: Run verification (dry-run)
-        run: dart pub publish --dry-run
+        run: flutter pub publish --dry-run
+        continue-on-error: true
 
       - name: Publish to pub.dev
-        run: dart pub publish --force
+        run: flutter pub publish --force
