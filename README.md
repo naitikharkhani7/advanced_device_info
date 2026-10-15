@@ -1,7 +1,8 @@
 # advanced_device_info
 
 [![pub package](https://img.shields.io/pub/v/advanced_device_info.svg)](https://pub.dev/packages/advanced_device_info)
-[![Flutter](https://img.shields.io/badge/Flutter-3.3%2B-blue.svg)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.12%2B-0175C2.svg)](https://dart.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.3%2B-02569B.svg)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-green.svg)](https://pub.dev/packages/advanced_device_info)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Pub Points](https://img.shields.io/pub/points/advanced_device_info)](https://pub.dev/packages/advanced_device_info/score)
@@ -9,6 +10,14 @@
 The ultimate, all-in-one Flutter device intelligence and diagnostics plugin. Retrieve **100+ native hardware specs, live peripheral states, anti-fraud & security indicators, DRM certifications, biometric hardware, thermal throttling, display HDR profiles, audio stream volumes, and accessibility settings** on Android and iOS.
 
 Replaces the need for 5+ fragmented packages (`device_info_plus`, `battery_plus`, `connectivity_plus`, root checkers, audio volume managers, and sensor libraries) into a single, unified, lightweight library with **zero dangerous permissions**.
+
+<p align="center">
+  <img src="screenshots/dashboard.png" width="31%" alt="System Metrics Dashboard" />
+  &nbsp;
+  <img src="screenshots/storage.png" width="31%" alt="Storage Breakdown" />
+  &nbsp;
+  <img src="screenshots/memory.png" width="31%" alt="RAM Diagnostics" />
+</p>
 
 ---
 
@@ -248,11 +257,13 @@ Or install via Flutter CLI:
 flutter pub add advanced_device_info
 ```
 
-### Platform Compatibility
-| Platform | Supported | Minimum OS Version |
+### Platform & Environment Compatibility
+| Environment / OS | Supported | Minimum Version |
 |---|:---:|---|
+| **Dart SDK** | ✅ | **Dart 3.12+** |
+| **Flutter SDK** | ✅ | Flutter 3.3+ |
 | **Android** | ✅ | Android 5.0+ (API 21+) |
-| **iOS** | ✅ | iOS 12.0+ |
+| **iOS** | ✅ | iOS 12.0+ / 13.0+ |
 | **macOS** | 🚧 Planned | macOS 11.0+ |
 | **Windows** | 🚧 Planned | Windows 10+ |
 | **Linux** | 🚧 Planned | Ubuntu 20.04+ |
